@@ -163,28 +163,35 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1.6rem;
+  gap: 1.8rem;
   z-index: 2;
 }
 
-.banner-flower {
-  width: 80px;
-  height: 80px;
-  filter: drop-shadow(0 6px 18px rgba(255, 111, 0, 0.8));
-  animation: pulse-banner-flower 2.5s infinite alternate ease-in-out;
+.banner-diya {
+  width: clamp(60px, 6.5vw, 88px);
+  height: clamp(60px, 6.5vw, 88px);
+  filter: drop-shadow(0 6px 22px rgba(255, 179, 0, 0.95)) drop-shadow(0 0 10px rgba(255, 61, 0, 0.7));
+  animation: flicker-banner-diya 2s infinite alternate ease-in-out;
 }
 
-.banner-flower.left {
+.banner-diya.left {
   animation-delay: 0.2s;
 }
 
-.banner-flower.right {
-  animation-delay: 0.6s;
+.banner-diya.right {
+  transform: scaleX(-1);
+  animation: flicker-banner-diya-right 2s infinite alternate ease-in-out;
+  animation-delay: 0.7s;
 }
 
-@keyframes pulse-banner-flower {
-  0% { transform: scale(0.95) rotate(-6deg); }
-  100% { transform: scale(1.08) rotate(6deg); }
+@keyframes flicker-banner-diya {
+  0% { transform: scale(0.95); filter: drop-shadow(0 4px 16px rgba(255, 179, 0, 0.85)); }
+  100% { transform: scale(1.05); filter: drop-shadow(0 10px 28px rgba(255, 111, 0, 1)); }
+}
+
+@keyframes flicker-banner-diya-right {
+  0% { transform: scaleX(-1) scale(0.95); filter: drop-shadow(0 4px 16px rgba(255, 179, 0, 0.85)); }
+  100% { transform: scaleX(-1) scale(1.05); filter: drop-shadow(0 10px 28px rgba(255, 111, 0, 1)); }
 }
 
 .finale-text-group {
@@ -232,24 +239,6 @@ body {
   color: #fff9e6;
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 179, 0, 0.7);
   margin-top: 0.5rem;
-}
-
-/* Diya Lamp at Bottom */
-.finale-diya-wrap {
-  margin-top: 0.8rem;
-  z-index: 2;
-}
-
-.finale-diya {
-  width: 96px;
-  height: 96px;
-  filter: drop-shadow(0 8px 24px rgba(255, 179, 0, 0.85));
-  animation: flicker-diya 1.8s infinite alternate ease-in-out;
-}
-
-@keyframes flicker-diya {
-  0% { transform: scale(0.96); filter: drop-shadow(0 6px 18px rgba(255, 179, 0, 0.75)); }
-  100% { transform: scale(1.05); filter: drop-shadow(0 10px 30px rgba(255, 111, 0, 0.95)); }
 }
 
 /* ============================================================
