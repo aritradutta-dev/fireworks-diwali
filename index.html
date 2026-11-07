@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🎆 Fireworks Conductor — Diwali 2026</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Hidden Video Element for MediaPipe Input -->
+      <video id="webcam" playsinline muted autoplay></video>
+
+      <!-- Main Compositing & Pyrotechnic Canvas -->
+      <canvas id="stage"></canvas>
+
+      <!-- Night Sky Vignette Overlay -->
+      <div class="vignette-overlay"></div>
+
+      <!-- UI Container (toggled in Creator Mode via 'H') -->
+      <div id="hud" class="hud-container">
+        <!-- Top Navigation Bar -->
+        <header class="hud-header">
+          <div class="brand">
+            <span class="brand-spark">🎆</span>
+            <div class="brand-text">
+              <span class="brand-title">Fireworks Conductor</span>
+              <span class="brand-edition">Diwali 2026 • Gesture Pyrotechnics</span>
+            </div>
+          </div>
+
+          <!-- Status Indicator Pill -->
+          <div id="status-pill" class="status-pill status-loading">
+            <span class="status-dot"></span>
+            <span id="status-text">Booting vision engine...</span>
+          </div>
+
+          <!-- Quick Controls -->
+          <div class="header-actions">
+            <button id="btn-audio" class="action-btn" title="Toggle Sound (M)">
+              <span class="btn-icon">🔊</span>
+              <span class="btn-label">Sound</span>
+            </button>
+            <button id="btn-debug" class="action-btn" title="Toggle Hand Skeleton (D)">
+              <span class="btn-icon">👁️</span>
+              <span class="btn-label">Tracker</span>
+            </button>
+            <button id="btn-screenshot" class="action-btn" title="Save Postcard Photo (S)">
+              <span class="btn-icon">📸</span>
+              <span class="btn-label">Snap</span>
+            </button>
+            <button id="btn-record" class="action-btn btn-record" title="Record Video Reel (R)">
+              <span class="record-dot"></span>
+              <span id="record-label" class="btn-label">Record</span>
+              <span id="record-timer" class="record-timer">00:00</span>
+            </button>
+            <button id="btn-creator-mode" class="action-btn" title="Creator Mode — Hide HUD for Reels (H)">
+              <span class="btn-icon">🎬</span>
+              <span class="btn-label">Clean (H)</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Floating Announcement Toast -->
+        <div id="gesture-announcement" class="gesture-announcement hidden">
+          <span id="announcement-icon" class="announcement-icon">✨</span>
+          <span id="announcement-name" class="announcement-name">Anar Fountain</span>
+        </div>
+
+        <!-- Gesture Guide Footer Bar -->
+        <footer class="hud-footer">
+          <div class="gesture-bar">
+            <div class="gesture-card" data-gesture="ROCKET">
+              <span class="gesture-badge">☝️</span>
+              <div class="gesture-info">
+                <span class="gesture-name">Rocket</span>
+                <span class="gesture-sub">Index Point</span>
+              </div>
+            </div>
+
+            <div class="gesture-card" data-gesture="ANAR">
+              <span class="gesture-badge">✊</span>
+              <div class="gesture-info">
+                <span class="gesture-name">Anar</span>
+                <span class="gesture-sub">Closed Fist</span>
+              </div>
+            </div>
+
+            <div class="gesture-card" data-gesture="STARBURST">
+              <span class="gesture-badge">✋</span>
+              <div class="gesture-info">
+                <span class="gesture-name">Starburst</span>
+                <span class="gesture-sub">Open Palm</span>
+              </div>
+            </div>
+
+            <div class="gesture-card" data-gesture="ROMAN_CANDLE">
+              <span class="gesture-badge">✌️</span>
+              <div class="gesture-info">
+                <span class="gesture-name">Roman Candle</span>
+                <span class="gesture-sub">Peace Sign</span>
+              </div>
+            </div>
+
+            <div class="gesture-card" data-gesture="PHOOLJHADI">
+              <span class="gesture-badge">👌</span>
+              <div class="gesture-info">
+                <span class="gesture-name">Phooljhadi</span>
+                <span class="gesture-sub">Pinch & Draw</span>
+              </div>
+            </div>
+
+            <div class="gesture-card" data-gesture="CHAKRI">
+              <span class="gesture-badge">🔄</span>
+              <div class="gesture-info">
+                <span class="gesture-name">Chakri</span>
+                <span class="gesture-sub">Circle Trace</span>
+              </div>
+            </div>
+
+            <div class="gesture-card" data-gesture="GRAND_FINALE">
+              <span class="gesture-badge">🙌</span>
+              <div class="gesture-info">
+                <span class="gesture-name">Grand Finale</span>
+                <span class="gesture-sub">Both Hands Open</span>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+
+      <!-- Creator Mode Floating Pill (Always shown when HUD hidden to allow restoring) -->
+      <button id="btn-restore-hud" class="restore-hud-btn hidden" title="Show Controls (Press H)">
+        <span>👁️ Show HUD [H]</span>
+      </button>
+
+      <!-- Festive Postcard Watermark -->
+      <div id="watermark" class="festive-watermark">
+        <span class="watermark-gold">✨ Happy Diwali ✨</span>
+        <span class="watermark-sub">Fireworks Conductor</span>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

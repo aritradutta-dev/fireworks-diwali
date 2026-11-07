@@ -1,0 +1,465 @@
+:root {
+  --bg-dark: #03050c;
+  --bg-gradient: radial-gradient(circle at center, #0a1128 0%, #03050c 100%);
+  --gold-primary: #ffd700;
+  --gold-glow: rgba(255, 215, 0, 0.45);
+  --ruby-glow: rgba(255, 51, 102, 0.45);
+  --cyan-glow: rgba(0, 240, 255, 0.45);
+  --glass-bg: rgba(13, 19, 36, 0.68);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-gold: rgba(255, 215, 0, 0.35);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --font-ui: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --font-festive: "Cinzel", serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-dark);
+  font-family: var(--font-ui);
+  color: var(--text-main);
+}
+
+#app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-gradient);
+}
+
+/* Hidden video used purely as camera capture buffer */
+#webcam {
+  display: none;
+}
+
+/* Fullscreen High-Performance Stage Canvas */
+#stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+}
+
+/* Atmospheric Night Vignette */
+.vignette-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    transparent 45%,
+    rgba(3, 5, 12, 0.5) 80%,
+    rgba(3, 5, 12, 0.85) 100%
+  );
+  z-index: 2;
+}
+
+/* HUD Overlay Shell */
+.hud-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.25rem 1.75rem;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.hud-container.hud-hidden {
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+}
+
+/* Top Navigation Header */
+.hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  pointer-events: auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.brand-spark {
+  font-size: 1.35rem;
+  animation: pulse-spark 2.5s infinite ease-in-out;
+}
+
+@keyframes pulse-spark {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.15) rotate(12deg); }
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  background: linear-gradient(135deg, #fff 0%, #ffd700 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.brand-edition {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+/* Status Pill */
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  font-size: 0.78rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.status-loading .status-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 10px #f59e0b;
+  animation: blink 1s infinite alternate;
+}
+
+.status-ready .status-dot {
+  background: #10b981;
+  box-shadow: 0 0 10px #10b981;
+}
+
+.status-active {
+  border-color: var(--gold-primary);
+  background: rgba(255, 215, 0, 0.12);
+  color: #fff;
+  box-shadow: 0 0 20px var(--gold-glow);
+}
+
+.status-active .status-dot {
+  background: var(--gold-primary);
+  box-shadow: 0 0 12px var(--gold-primary);
+}
+
+@keyframes blink {
+  0% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+/* Header Action Buttons */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  color: var(--text-main);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.action-btn:active {
+  transform: translateY(1px);
+}
+
+.action-btn.btn-active {
+  background: rgba(255, 215, 0, 0.18);
+  border-color: var(--gold-primary);
+  color: var(--gold-primary);
+  box-shadow: 0 0 15px var(--gold-glow);
+}
+
+/* Record Button Styling */
+.btn-record {
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.btn-record:hover {
+  border-color: rgba(239, 68, 68, 0.8);
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.record-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.btn-record.recording {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+.btn-record.recording .record-dot {
+  animation: pulse-rec 0.9s infinite alternate;
+}
+
+@keyframes pulse-rec {
+  0% { transform: scale(0.85); opacity: 0.6; }
+  100% { transform: scale(1.25); opacity: 1; }
+}
+
+.record-timer {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  display: none;
+}
+
+.btn-record.recording .record-timer {
+  display: inline;
+  color: #fca5a5;
+}
+
+/* Floating Announcement Toast */
+.gesture-announcement {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1.4rem;
+  border-radius: 999px;
+  background: rgba(10, 15, 30, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--gold-primary);
+  box-shadow: 0 0 30px var(--gold-glow);
+  transform: translateY(0);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.gesture-announcement.hidden {
+  opacity: 0;
+  transform: translateY(12px) scale(0.95);
+}
+
+.announcement-icon {
+  font-size: 1.35rem;
+}
+
+.announcement-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  color: #fff;
+  text-shadow: 0 0 10px var(--gold-primary);
+}
+
+/* Footer Gesture Reference Bar */
+.hud-footer {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  pointer-events: auto;
+}
+
+.gesture-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 0.5rem 0.75rem;
+  border-radius: 20px;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.gesture-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: default;
+}
+
+.gesture-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.gesture-badge {
+  font-size: 1.15rem;
+}
+
+.gesture-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.gesture-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.gesture-sub {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Active Highlight when Gesture is Detected */
+.gesture-card.active {
+  background: rgba(255, 215, 0, 0.18);
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 20px var(--gold-glow);
+  transform: translateY(-2px);
+}
+
+.gesture-card.active .gesture-name {
+  color: var(--gold-primary);
+  text-shadow: 0 0 10px var(--gold-glow);
+}
+
+/* Restore HUD Floating Button in Creator Mode */
+.restore-hud-btn {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 20;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(13, 19, 36, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  color: var(--text-main);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.restore-hud-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.restore-hud-btn.hidden {
+  display: none;
+}
+
+/* Festive Watermark */
+.festive-watermark {
+  position: absolute;
+  bottom: 1.25rem;
+  right: 1.5rem;
+  z-index: 5;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  opacity: 0.75;
+  transition: opacity 0.3s ease;
+}
+
+.watermark-gold {
+  font-family: var(--font-festive);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gold-primary);
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+}
+
+.watermark-sub {
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* Responsive adjustments */
+@media (max-width: 860px) {
+  .hud-container {
+    padding: 0.75rem 1rem;
+  }
+  .brand-edition {
+    display: none;
+  }
+  .gesture-sub {
+    display: none;
+  }
+  .gesture-card {
+    padding: 0.35rem 0.55rem;
+  }
+}

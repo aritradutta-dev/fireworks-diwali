@@ -5,7 +5,7 @@
 - Branch: `main`
 
 ## Tickets
-- [ ] **01-scaffolding-night-sky-hud**: Scaffolding, Night Sky Video Feed & Creator HUD
+- [x] **01-scaffolding-night-sky-hud**: Scaffolding, Night Sky Video Feed & Creator HUD
 - [ ] **02-fast-vision-engine**: Fast Vision Engine & Gesture Classifier (@mediapipe/tasks-vision float16)
 - [ ] **03-particle-physics-renderer**: Particle Physics Engine & Glow Renderer (Canvas 2D additive)
 - [ ] **04-authentic-diwali-fireworks**: Authentic Diwali Fireworks Systems (7 gestures)
