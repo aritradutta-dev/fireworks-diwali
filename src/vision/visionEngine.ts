@@ -90,7 +90,7 @@ export class VisionEngine {
       const now = performance.now();
       const result: HandLandmarkerResult = this.landmarker.detectForVideo(video, now);
       this.detectedHands = this.parsePoses(result, screenW, screenH);
-      this.activeGestures = this.classifier.classify(this.detectedHands, screenW, screenH);
+      this.activeGestures = this.classifier.classify(this.detectedHands, screenW);
     }
 
     return this.activeGestures;

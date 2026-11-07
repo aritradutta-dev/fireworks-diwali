@@ -23,13 +23,8 @@ export class PyroAudioEngine {
   private sparklerGain: GainNode | null = null;
   private sparklerActive: boolean = false;
 
-  private chakriLoopSource: AudioBufferSourceNode | null = null;
-  private chakriGain: GainNode | null = null;
-  private chakriActive: boolean = false;
-
   private lastAnarPulse: number = 0;
   private lastSparklerPulse: number = 0;
-  private lastChakriPulse: number = 0;
 
   constructor() {
     // Lazy AudioContext initialization
@@ -82,7 +77,6 @@ export class PyroAudioEngine {
       ROMAN_POP: '/audio/roman-pop.mp3',
       ANAR: '/audio/anar-fountain.mp3',
       SPARKLER: '/audio/sparkler.mp3',
-      CHAKRI: '/audio/chakri-spin.mp3',
       FINALE: '/audio/finale-barrage.mp3'
     };
 
@@ -229,24 +223,6 @@ export class PyroAudioEngine {
     }
   }
 
-  /**
-   * 7. Continuous Chakri Whir
-   */
-  public pulseChakriLoop(): void {
-    this.lastChakriPulse = performance.now();
-    if (!this.ctx || !this.masterGain || this.isMuted) return;
-
-    if (!this.chakriActive) {
-      this.startContinuousSample('CHAKRI', (src, gain) => {
-        this.chakriLoopSource = src;
-        this.chakriGain = gain;
-        this.chakriActive = true;
-      });
-    } else if (this.chakriGain) {
-      this.chakriGain.gain.setTargetAtTime(0.85, this.ctx.currentTime, 0.05);
-    }
-  }
-
   private startContinuousSample(
     key: string,
     callback: (src: AudioBufferSourceNode, gain: GainNode) => void
@@ -295,18 +271,6 @@ export class PyroAudioEngine {
         this.sparklerLoopSource = null;
         this.sparklerGain = null;
         this.sparklerActive = false;
-      }
-    }
-
-    if (this.chakriActive && now - this.lastChakriPulse > 150) {
-      if (this.chakriGain) {
-        this.chakriGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
-      }
-      if (now - this.lastChakriPulse > 300) {
-        this.stopSource(this.chakriLoopSource);
-        this.chakriLoopSource = null;
-        this.chakriGain = null;
-        this.chakriActive = false;
       }
     }
   }

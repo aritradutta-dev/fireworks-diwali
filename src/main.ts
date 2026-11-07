@@ -86,9 +86,6 @@ class FireworksApp {
         case 'SPARKLER_LOOP':
           this.audio.pulseSparklerLoop();
           break;
-        case 'CHAKRI_LOOP':
-          this.audio.pulseChakriLoop();
-          break;
         case 'ROMAN_POP':
           this.audio.playRomanPop();
           break;
@@ -229,8 +226,6 @@ class FireworksApp {
       } else if (e.key === '5') {
         this.director.handleGestures([{ type: 'PHOOLJHADI', confidence: 1, triggerPoint: center, handIndex: 0, isContinuous: true }], w, h);
       } else if (e.key === '6') {
-        this.director.handleGestures([{ type: 'CHAKRI', confidence: 1, triggerPoint: center, handIndex: 0, isContinuous: false }], w, h);
-      } else if (e.key === '7') {
         this.triggerGrandFinale(w, h);
       }
     });

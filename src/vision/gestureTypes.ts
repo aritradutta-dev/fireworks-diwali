@@ -5,7 +5,6 @@ export type GestureType =
   | 'STARBURST'
   | 'ROMAN_CANDLE'
   | 'PHOOLJHADI'
-  | 'CHAKRI'
   | 'GRAND_FINALE';
 
 export interface NormalizedLandmark {

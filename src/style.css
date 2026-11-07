@@ -399,14 +399,6 @@ body {
 }
 .card-phooljhadi.active .gesture-name { color: #fff0b4; }
 
-.card-chakri.active {
-  background: rgba(255, 20, 147, 0.22);
-  border-color: #ff1493;
-  box-shadow: 0 0 24px var(--magenta-glow);
-  transform: translateY(-2px);
-}
-.card-chakri.active .gesture-name { color: #ff1493; }
-
 .card-finale.active {
   background: linear-gradient(135deg, rgba(255, 215, 0, 0.25) 0%, rgba(255, 51, 102, 0.25) 100%);
   border-color: #ffd700;

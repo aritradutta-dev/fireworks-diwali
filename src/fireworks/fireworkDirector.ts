@@ -5,7 +5,6 @@ import { Anar } from './anar';
 import { Starburst } from './starburst';
 import { RomanCandle } from './romanCandle';
 import { Sparkler } from './sparkler';
-import { Chakri } from './chakri';
 import { GrandFinale } from './grandFinale';
 import { DetectedGesture } from '../vision/gestureTypes';
 import { COLORS } from './fireworkColors';
@@ -80,11 +79,6 @@ export class FireworkDirector {
           } else {
             sparkler.updatePosition(triggerPoint.x, triggerPoint.y);
           }
-          break;
-        }
-
-        case 'CHAKRI': {
-          this.effects.push(new Chakri(triggerPoint.x, triggerPoint.y, this.onSound));
           break;
         }
 
