@@ -66,8 +66,7 @@ export class Chakri implements FireworkEffect {
           drag: 0.955,
           gravity: 0.12,
           flicker: true,
-          crackle: Math.random() < 0.3,
-          bounceFloor: this.y + 120 // Ground bounce level
+          crackle: Math.random() < 0.3
         });
       }
     }

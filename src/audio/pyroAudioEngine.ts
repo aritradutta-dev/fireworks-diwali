@@ -1,7 +1,7 @@
 /**
  * Authentic Pyrotechnics Audio Engine
  * Loads and plays real recorded Diwali firecracker samples with zero latency,
- * pitch randomization, smooth looping, and fallback synthesis.
+ * pitch randomization, smooth looping, and heavy aerial blast synthesis.
  */
 
 export class PyroAudioEngine {
@@ -76,6 +76,9 @@ export class PyroAudioEngine {
       ROCKET_WHISTLE: '/audio/rocket-whistle.mp3',
       ROCKET_EXPLOSION: '/audio/rocket-explosion.mp3',
       STARBURST: '/audio/starburst.mp3',
+      HEAVY_EXPLOSION: '/audio/heavy-explosion-hit.mp3',
+      THUNDER_CRACK: '/audio/thunder-crack.mp3',
+      AERIAL_BURST: '/audio/aerial-shell-burst.mp3',
       ROMAN_POP: '/audio/roman-pop.mp3',
       ANAR: '/audio/anar-fountain.mp3',
       SPARKLER: '/audio/sparkler.mp3',
@@ -115,8 +118,7 @@ export class PyroAudioEngine {
 
     const buffer = this.buffers.get(key);
     if (!buffer) {
-      // Fallback synthesis if sample is still loading
-      this.fallbackBeep(key, volume);
+      this.fallbackBoom(volume);
       return;
     }
 
@@ -144,11 +146,37 @@ export class PyroAudioEngine {
   }
 
   /**
-   * 2. Rocket / Shell Explosion
+   * 2. Rocket / Shell / Starburst Explosion
+   * Powerful, layered aerial bomb burst with deep sub-bass punch
    */
   public playExplosion(intensity: number = 1.0): void {
-    const key = Math.random() < 0.5 ? 'ROCKET_EXPLOSION' : 'STARBURST';
-    this.playSample(key, Math.min(1.0, 0.85 * intensity), 0.08);
+    if (!this.ctx || !this.masterGain || this.isMuted) return;
+
+    // Layer 1: Heavy Concussive Bomb Hit
+    this.playSample('HEAVY_EXPLOSION', Math.min(1.0, 0.95 * intensity), 0.07);
+
+    // Layer 2: Aerial Shell Crack & Sizzling Debris
+    this.playSample('AERIAL_BURST', Math.min(1.0, 0.85 * intensity), 0.05);
+
+    // Layer 3: Sub-Bass Sine Drop for physical chest rumble
+    try {
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const oscGain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(115, now);
+      osc.frequency.exponentialRampToValueAtTime(26, now + 0.65);
+
+      oscGain.gain.setValueAtTime(0.7 * intensity, now);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+
+      osc.connect(oscGain);
+      oscGain.connect(this.masterGain);
+      osc.start(now);
+      osc.stop(now + 0.75);
+    } catch {
+      // Ignore sub-bass if context busy
+    }
   }
 
   /**
@@ -179,7 +207,7 @@ export class PyroAudioEngine {
         this.anarActive = true;
       });
     } else if (this.anarGain) {
-      this.anarGain.gain.setTargetAtTime(0.85, this.ctx.currentTime, 0.05);
+      this.anarGain.gain.setTargetAtTime(0.9, this.ctx.currentTime, 0.05);
     }
   }
 
@@ -197,7 +225,7 @@ export class PyroAudioEngine {
         this.sparklerActive = true;
       });
     } else if (this.sparklerGain) {
-      this.sparklerGain.gain.setTargetAtTime(0.75, this.ctx.currentTime, 0.05);
+      this.sparklerGain.gain.setTargetAtTime(0.8, this.ctx.currentTime, 0.05);
     }
   }
 
@@ -215,7 +243,7 @@ export class PyroAudioEngine {
         this.chakriActive = true;
       });
     } else if (this.chakriGain) {
-      this.chakriGain.gain.setTargetAtTime(0.8, this.ctx.currentTime, 0.05);
+      this.chakriGain.gain.setTargetAtTime(0.85, this.ctx.currentTime, 0.05);
     }
   }
 
@@ -233,7 +261,7 @@ export class PyroAudioEngine {
 
     const gain = this.ctx.createGain();
     gain.gain.setValueAtTime(0.01, this.ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.8, this.ctx.currentTime + 0.1);
+    gain.gain.linearRampToValueAtTime(0.85, this.ctx.currentTime + 0.1);
 
     source.connect(gain);
     gain.connect(this.masterGain);
@@ -246,7 +274,6 @@ export class PyroAudioEngine {
     if (!this.ctx) return;
     const now = performance.now();
 
-    // Fade out Anar if not refreshed in 150ms
     if (this.anarActive && now - this.lastAnarPulse > 150) {
       if (this.anarGain) {
         this.anarGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
@@ -259,7 +286,6 @@ export class PyroAudioEngine {
       }
     }
 
-    // Fade out Sparkler if not refreshed in 150ms
     if (this.sparklerActive && now - this.lastSparklerPulse > 150) {
       if (this.sparklerGain) {
         this.sparklerGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
@@ -272,7 +298,6 @@ export class PyroAudioEngine {
       }
     }
 
-    // Fade out Chakri if not refreshed in 150ms
     if (this.chakriActive && now - this.lastChakriPulse > 150) {
       if (this.chakriGain) {
         this.chakriGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
@@ -296,18 +321,18 @@ export class PyroAudioEngine {
     }
   }
 
-  private fallbackBeep(_key: string, _volume: number): void {
+  private fallbackBoom(volume: number): void {
     if (!this.ctx || !this.masterGain || this.isMuted) return;
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.frequency.setValueAtTime(140, now);
-    osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
-    gain.gain.setValueAtTime(0.4, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    osc.frequency.setValueAtTime(120, now);
+    osc.frequency.exponentialRampToValueAtTime(30, now + 0.5);
+    gain.gain.setValueAtTime(0.7 * volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
     osc.connect(gain);
     gain.connect(this.masterGain);
     osc.start(now);
-    osc.stop(now + 0.4);
+    osc.stop(now + 0.6);
   }
 }

@@ -1,11 +1,12 @@
 /**
  * Reel Recording & Postcard Screenshot Engine
  * Uses MediaRecorder with visual canvas stream + procedural audio track.
+ * Supports in-browser video preview modal before download.
  */
 
 export interface CaptureCallbacks {
   onRecordingStart?: () => void;
-  onRecordingStop?: () => void;
+  onRecordingStop?: (videoBlob: Blob, videoUrl: string) => void;
   onTimeUpdate?: (elapsedSeconds: number, maxSeconds: number) => void;
 }
 
@@ -18,6 +19,8 @@ export class CaptureEngine {
   private timerInterval: number = 0;
   private readonly MAX_DURATION_SEC: number = 30;
   private callbacks: CaptureCallbacks = {};
+  public latestBlob: Blob | null = null;
+  public latestVideoUrl: string | null = null;
 
   constructor(canvas: HTMLCanvasElement, callbacks?: CaptureCallbacks) {
     this.canvas = canvas;
@@ -28,9 +31,6 @@ export class CaptureEngine {
     this.callbacks = callbacks;
   }
 
-  /**
-   * Starts video recording combining canvas visual stream + audio track
-   */
   public startRecording(audioTrack: MediaStreamTrack | null): boolean {
     if (this.isRecording) return false;
 
@@ -38,15 +38,12 @@ export class CaptureEngine {
       const canvasStream = this.canvas.captureStream(30);
       const combinedStream = new MediaStream();
 
-      // Add visual track
       canvasStream.getVideoTracks().forEach((track) => combinedStream.addTrack(track));
 
-      // Add procedural audio track if available
       if (audioTrack) {
         combinedStream.addTrack(audioTrack);
       }
 
-      // Detect best supported mime type
       const mimeTypes = [
         'video/webm;codecs=vp9,opus',
         'video/webm;codecs=vp8,opus',
@@ -77,13 +74,12 @@ export class CaptureEngine {
         this.finishRecording();
       };
 
-      this.recorder.start(250); // Slice every 250ms
+      this.recorder.start(200);
       this.isRecording = true;
       this.startTime = performance.now();
 
       this.callbacks.onRecordingStart?.();
 
-      // Start elapsed timer loop
       this.timerInterval = window.setInterval(() => {
         if (!this.isRecording) return;
         const elapsed = (performance.now() - this.startTime) / 1000;
@@ -109,33 +105,37 @@ export class CaptureEngine {
     if (this.recorder.state !== 'inactive') {
       this.recorder.stop();
     }
-    this.callbacks.onRecordingStop?.();
   }
 
   private finishRecording(): void {
     if (this.recordedChunks.length === 0) return;
 
+    if (this.latestVideoUrl) {
+      URL.revokeObjectURL(this.latestVideoUrl);
+    }
+
     const blob = new Blob(this.recordedChunks, {
       type: this.recorder?.mimeType || 'video/webm'
     });
-    const url = URL.createObjectURL(blob);
+    this.latestBlob = blob;
+    this.latestVideoUrl = URL.createObjectURL(blob);
 
-    // Trigger instant download
+    // Pass blob and URL to UI modal instead of direct auto-download!
+    this.callbacks.onRecordingStop?.(blob, this.latestVideoUrl);
+  }
+
+  public downloadCurrentReel(filename?: string): void {
+    if (!this.latestVideoUrl) return;
     const a = document.createElement('a');
-    a.href = url;
+    a.href = this.latestVideoUrl;
     const now = new Date();
     const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    a.download = `Diwali-Fireworks-Reel-${timestamp}.webm`;
+    a.download = filename || `Diwali-Reel-${timestamp}.webm`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-
-    window.setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
 
-  /**
-   * Captures current composited frame as a crisp festive PNG postcard
-   */
   public takeScreenshot(): void {
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = this.canvas.width;
@@ -143,10 +143,8 @@ export class CaptureEngine {
     const tCtx = tempCanvas.getContext('2d');
     if (!tCtx) return;
 
-    // Draw main stage canvas
     tCtx.drawImage(this.canvas, 0, 0);
 
-    // Draw gold festive stamp on bottom right of the image
     const pad = tempCanvas.width * 0.035;
     tCtx.save();
     tCtx.textAlign = 'right';

@@ -54,8 +54,7 @@ export class Anar implements FireworkEffect {
         drag: 0.965,
         gravity: 0.42, // Heavy gravity curves fountain down
         flicker: true,
-        crackle: Math.random() < 0.35,
-        bounceFloor: this.y + 180
+        crackle: Math.random() < 0.35
       });
     }
 

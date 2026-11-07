@@ -4,7 +4,7 @@ import { VisionEngine } from './vision/visionEngine';
 import { FireworkDirector } from './fireworks/fireworkDirector';
 import { PyroAudioEngine } from './audio/pyroAudioEngine';
 import { CaptureEngine } from './capture/captureEngine';
-import { DetectedGesture, GestureType } from './vision/gestureTypes';
+import { DetectedGesture } from './vision/gestureTypes';
 
 class FireworksApp {
   private compositor: VideoCompositor;
@@ -16,8 +16,6 @@ class FireworksApp {
   // DOM Elements
   private hudElement: HTMLElement;
   private restoreHudBtn: HTMLElement;
-  private statusPill: HTMLElement;
-  private statusText: HTMLElement;
   private creatorModeBtn: HTMLElement;
   private debugBtn: HTMLElement;
   private audioBtn: HTMLElement;
@@ -25,14 +23,18 @@ class FireworksApp {
   private recordBtn: HTMLElement;
   private recordLabel: HTMLElement;
   private recordTimer: HTMLElement;
-  private announcementToast: HTMLElement;
-  private announcementName: HTMLElement;
-  private announcementIcon: HTMLElement;
-  private gestureCards: Map<string, HTMLElement> = new Map();
+  private finaleCenter: HTMLElement;
+  private finaleTimeout: number = 0;
 
+  // Recording Modal Elements
+  private recordingModal: HTMLElement;
+  private previewVideo: HTMLVideoElement;
+  private modalDownloadBtn: HTMLElement;
+  private modalRetakeBtn: HTMLElement;
+  private modalCloseBtn: HTMLElement;
+
+  private gestureCards: Map<string, HTMLElement> = new Map();
   private isCreatorMode: boolean = false;
-  private lastAnnouncedGesture: GestureType = 'NONE';
-  private announcementTimeout: number = 0;
   private lastFrameTime: number = performance.now();
 
   constructor() {
@@ -40,8 +42,6 @@ class FireworksApp {
     const video = document.getElementById('webcam') as HTMLVideoElement;
     this.hudElement = document.getElementById('hud') as HTMLElement;
     this.restoreHudBtn = document.getElementById('btn-restore-hud') as HTMLElement;
-    this.statusPill = document.getElementById('status-pill') as HTMLElement;
-    this.statusText = document.getElementById('status-text') as HTMLElement;
     this.creatorModeBtn = document.getElementById('btn-creator-mode') as HTMLElement;
     this.debugBtn = document.getElementById('btn-debug') as HTMLElement;
     this.audioBtn = document.getElementById('btn-audio') as HTMLElement;
@@ -49,9 +49,14 @@ class FireworksApp {
     this.recordBtn = document.getElementById('btn-record') as HTMLElement;
     this.recordLabel = document.getElementById('record-label') as HTMLElement;
     this.recordTimer = document.getElementById('record-timer') as HTMLElement;
-    this.announcementToast = document.getElementById('gesture-announcement') as HTMLElement;
-    this.announcementName = document.getElementById('announcement-name') as HTMLElement;
-    this.announcementIcon = document.getElementById('announcement-icon') as HTMLElement;
+    this.finaleCenter = document.getElementById('grand-finale-center') as HTMLElement;
+
+    // Recording Modal Elements
+    this.recordingModal = document.getElementById('recording-modal') as HTMLElement;
+    this.previewVideo = document.getElementById('preview-video') as HTMLVideoElement;
+    this.modalDownloadBtn = document.getElementById('modal-download-btn') as HTMLElement;
+    this.modalRetakeBtn = document.getElementById('modal-retake-btn') as HTMLElement;
+    this.modalCloseBtn = document.getElementById('modal-close-btn') as HTMLElement;
 
     // Cache gesture cards
     document.querySelectorAll<HTMLElement>('.gesture-card').forEach((card) => {
@@ -59,14 +64,14 @@ class FireworksApp {
       if (g) this.gestureCards.set(g, card);
     });
 
-    // Initialize core subsystems
+    // Subsystems
     this.compositor = new VideoCompositor({ canvas, video });
     this.vision = new VisionEngine();
     this.audio = new PyroAudioEngine();
     this.director = new FireworkDirector();
     this.capture = new CaptureEngine(canvas);
 
-    // Wire procedural audio triggers to firework director
+    // Audio Trigger Callback
     this.director.setSoundCallback((soundType, intensity) => {
       switch (soundType) {
         case 'ROCKET_LAUNCH':
@@ -148,7 +153,6 @@ class FireworksApp {
     // 4. Postcard Screenshot (S key)
     const takeSnap = () => {
       this.capture.takeScreenshot();
-      this.announceToast('📸 Postcard Captured & Downloaded!', '✨');
     };
     this.screenshotBtn.addEventListener('click', takeSnap);
 
@@ -164,18 +168,19 @@ class FireworksApp {
     };
     this.recordBtn.addEventListener('click', toggleRecording);
 
-    // Configure capture callbacks for UI updates
+    // Configure capture callbacks
     this.capture.setCallbacks({
       onRecordingStart: () => {
         this.recordBtn.classList.add('recording');
         this.recordLabel.textContent = 'Stop';
-        this.announceToast('🔴 Recording Started (Max 30s)', '🎥');
       },
-      onRecordingStop: () => {
+      onRecordingStop: (_blob, videoUrl) => {
         this.recordBtn.classList.remove('recording');
         this.recordLabel.textContent = 'Record';
         this.recordTimer.textContent = '00:00';
-        this.announceToast('💾 Reel Saved & Downloading...', '🎉');
+
+        // Open Video Preview Modal (Fog Mirror Style)
+        this.showRecordingPreview(videoUrl);
       },
       onTimeUpdate: (elapsed, max) => {
         const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
@@ -185,8 +190,23 @@ class FireworksApp {
       }
     });
 
-    // 6. Global Keybindings
+    // Recording Preview Modal Handlers
+    this.modalDownloadBtn.addEventListener('click', () => {
+      this.capture.downloadCurrentReel();
+    });
+
+    const closeModal = () => {
+      this.recordingModal.classList.add('hidden');
+      this.previewVideo.pause();
+      this.previewVideo.src = '';
+    };
+
+    this.modalCloseBtn.addEventListener('click', closeModal);
+    this.modalRetakeBtn.addEventListener('click', closeModal);
+
+    // Global Keybindings
     window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
       if (e.key === 'h' || e.key === 'H') toggleCreatorMode();
       if (e.key === 'd' || e.key === 'D') toggleDebug();
       if (e.key === 'm' || e.key === 'M') toggleAudio();
@@ -211,14 +231,13 @@ class FireworksApp {
       } else if (e.key === '6') {
         this.director.handleGestures([{ type: 'CHAKRI', confidence: 1, triggerPoint: center, handIndex: 0, isContinuous: false }], w, h);
       } else if (e.key === '7') {
-        this.director.handleGestures([{ type: 'GRAND_FINALE', confidence: 1, triggerPoint: center, handIndex: -1, isContinuous: false }], w, h);
+        this.triggerGrandFinale(w, h);
       }
     });
 
-    // Mouse click launches a rocket at click coordinate!
+    // Mouse click launches rocket at click coordinate
     window.addEventListener('pointerdown', (e) => {
-      // Don't fire if clicking HUD buttons
-      if ((e.target as HTMLElement).closest('.hud-header, .hud-footer, .restore-hud-btn')) return;
+      if ((e.target as HTMLElement).closest('.hud-header, .hud-footer, .restore-hud-btn, .recording-modal')) return;
       this.audio.unlock();
       this.director.handleGestures(
         [{ type: 'ROCKET', confidence: 1, triggerPoint: { x: e.clientX, y: e.clientY }, handIndex: 0, isContinuous: false }],
@@ -228,24 +247,38 @@ class FireworksApp {
     });
   }
 
+  private showRecordingPreview(videoUrl: string): void {
+    this.previewVideo.src = videoUrl;
+    this.recordingModal.classList.remove('hidden');
+    this.previewVideo.play().catch(() => {});
+  }
+
+  private triggerGrandFinale(w: number, h: number): void {
+    this.director.handleGestures(
+      [{ type: 'GRAND_FINALE', confidence: 1, triggerPoint: { x: w / 2, y: h / 2 }, handIndex: -1, isContinuous: false }],
+      w,
+      h
+    );
+
+    // After 1.4 seconds of rockets filling the sky, display the majestic "HAPPY DIWALI" centerpiece!
+    window.clearTimeout(this.finaleTimeout);
+    this.finaleTimeout = window.setTimeout(() => {
+      this.finaleCenter.classList.remove('hidden');
+
+      // Keep it up for 4.5 seconds of golden celebration, then fade out smoothly
+      window.setTimeout(() => {
+        this.finaleCenter.classList.add('hidden');
+      }, 4800);
+    }, 1400);
+  }
+
   private async init(): Promise<void> {
     try {
-      this.statusText.textContent = 'Requesting camera (640x480)...';
       await this.compositor.startCamera();
-
-      this.statusText.textContent = 'Loading MediaPipe HandLandmarker (float16)...';
-      await this.vision.init((progress) => {
-        this.statusText.textContent = progress;
-      });
-
-      this.statusPill.className = 'status-pill status-ready';
-      this.statusText.textContent = 'Ready • Show your hands';
+      await this.vision.init();
     } catch (err) {
       console.error('Initialization failed:', err);
-      this.statusPill.className = 'status-pill status-loading';
-      this.statusText.textContent = err instanceof Error ? err.message : 'Startup error';
     }
-
     this.loop();
   }
 
@@ -254,7 +287,7 @@ class FireworksApp {
     const dt = Math.min((now - this.lastFrameTime) / 1000, 0.1);
     this.lastFrameTime = now;
 
-    // 1. Draw atmospheric night sky camera feed
+    // 1. Draw atmospheric night camera background
     this.compositor.drawBackground();
 
     // 2. Process vision frame
@@ -264,92 +297,37 @@ class FireworksApp {
       this.compositor.height
     );
 
-    // 3. Dispatch active gestures to Firework Director
-    this.director.handleGestures(
-      activeGestures,
-      this.compositor.width,
-      this.compositor.height
-    );
+    // Check if Grand Finale was recognized by gesture
+    const isFinale = activeGestures.some((g) => g.type === 'GRAND_FINALE');
+    if (isFinale) {
+      this.triggerGrandFinale(this.compositor.width, this.compositor.height);
+    } else {
+      // 3. Dispatch other active gestures to Firework Director
+      this.director.handleGestures(
+        activeGestures,
+        this.compositor.width,
+        this.compositor.height
+      );
+    }
 
-    // 4. Simulate & Render Particle Fireworks with Additive Blending
+    // 4. Simulate & Render Particle Fireworks with Additive Blending & Lighting
     this.director.updateAndRender(dt, this.compositor.ctx);
 
     // 5. Draw Debug skeleton if active
     this.vision.drawDebugSkeleton(this.compositor.ctx);
 
-    // 6. Update UI gesture state
-    this.updateUI(activeGestures);
+    // 6. Update bottom gesture bar active highlight
+    this.updateBottomBar(activeGestures);
 
     requestAnimationFrame(this.loop);
   };
 
-  private updateUI(gestures: DetectedGesture[]): void {
-    // Clear active states on all cards
+  private updateBottomBar(gestures: DetectedGesture[]): void {
     this.gestureCards.forEach((card) => card.classList.remove('active'));
-
     if (gestures.length > 0) {
       const primary = gestures[0];
       const card = this.gestureCards.get(primary.type);
       if (card) card.classList.add('active');
-
-      this.statusPill.className = 'status-pill status-active';
-      this.statusText.textContent = `Igniting: ${this.formatGestureName(primary.type)}`;
-
-      if (primary.type !== this.lastAnnouncedGesture) {
-        this.announceGesture(primary.type);
-        this.lastAnnouncedGesture = primary.type;
-      }
-    } else {
-      if (this.vision.detectedHands.length > 0) {
-        this.statusPill.className = 'status-pill status-ready';
-        this.statusText.textContent = `${this.vision.detectedHands.length} hand(s) tracked • Form a gesture`;
-      } else {
-        this.statusPill.className = 'status-pill status-ready';
-        this.statusText.textContent = 'Show your hands to conduct fireworks';
-      }
-      this.lastAnnouncedGesture = 'NONE';
-    }
-  }
-
-  private announceToast(name: string, icon: string): void {
-    this.announcementIcon.textContent = icon;
-    this.announcementName.textContent = name;
-    this.announcementToast.classList.remove('hidden');
-
-    window.clearTimeout(this.announcementTimeout);
-    this.announcementTimeout = window.setTimeout(() => {
-      this.announcementToast.classList.add('hidden');
-    }, 2000);
-  }
-
-  private announceGesture(type: GestureType): void {
-    const config: Record<GestureType, { name: string; icon: string }> = {
-      NONE: { name: '', icon: '' },
-      ROCKET: { name: 'Rocket Launched!', icon: '🚀' },
-      ANAR: { name: 'Anar Fountain Spouting!', icon: '✨' },
-      STARBURST: { name: 'Starburst Shell Explosion!', icon: '💥' },
-      ROMAN_CANDLE: { name: 'Roman Candle Firing!', icon: '🎆' },
-      PHOOLJHADI: { name: 'Phooljhadi Sparkler Active!', icon: '👌' },
-      CHAKRI: { name: 'Chakri Ground Spinner!', icon: '🔄' },
-      GRAND_FINALE: { name: '🎆 GRAND FINALE BOMBARDMENT 🎆', icon: '🙌' }
-    };
-
-    const item = config[type];
-    if (item.name) {
-      this.announceToast(item.name, item.icon);
-    }
-  }
-
-  private formatGestureName(type: GestureType): string {
-    switch (type) {
-      case 'ROCKET': return 'Rocket (☝️)';
-      case 'ANAR': return 'Anar Fountain (✊)';
-      case 'STARBURST': return 'Starburst (✋)';
-      case 'ROMAN_CANDLE': return 'Roman Candle (✌️)';
-      case 'PHOOLJHADI': return 'Phooljhadi Sparkler (👌)';
-      case 'CHAKRI': return 'Chakri Spinner (👇 Point Down)';
-      case 'GRAND_FINALE': return 'Grand Finale (🙌)';
-      default: return 'None';
     }
   }
 }

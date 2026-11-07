@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/src/style.css" />
@@ -20,28 +20,27 @@
       <!-- Main Compositing & Pyrotechnic Canvas -->
       <canvas id="stage"></canvas>
 
-      <!-- Night Sky Vignette Overlay -->
+      <!-- Night Sky Atmospheric Vignette -->
       <div class="vignette-overlay"></div>
+
+      <!-- Grand Finale Centerpiece: Shows "HAPPY DIWALI" in center after Grand Finale -->
+      <div id="grand-finale-center" class="grand-finale-center hidden">
+        <div class="finale-sparkle-aura"></div>
+        <h1 class="finale-heading">✨ HAPPY DIWALI ✨</h1>
+        <p class="finale-subheading">May your year blaze with light, joy & prosperity</p>
+      </div>
 
       <!-- UI Container (toggled in Creator Mode via 'H') -->
       <div id="hud" class="hud-container">
-        <!-- Top Navigation Bar -->
+        <!-- Minimal, Colorful Top Navigation Bar -->
         <header class="hud-header">
-          <div class="brand">
-            <span class="brand-spark">🎆</span>
-            <div class="brand-text">
-              <span class="brand-title">Fireworks Conductor</span>
-              <span class="brand-edition">Diwali 2026 • Gesture Pyrotechnics</span>
-            </div>
+          <!-- Minimal Festive Pill (replaces bulky logo) -->
+          <div class="festive-badge">
+            <span class="badge-dot"></span>
+            <span class="badge-text">Diwali 2026</span>
           </div>
 
-          <!-- Status Indicator Pill -->
-          <div id="status-pill" class="status-pill status-loading">
-            <span class="status-dot"></span>
-            <span id="status-text">Booting vision engine...</span>
-          </div>
-
-          <!-- Quick Controls -->
+          <!-- Quick Controls Dock -->
           <div class="header-actions">
             <button id="btn-audio" class="action-btn" title="Toggle Sound (M)">
               <span class="btn-icon">🔊</span>
@@ -51,7 +50,7 @@
               <span class="btn-icon">👁️</span>
               <span class="btn-label">Tracker</span>
             </button>
-            <button id="btn-screenshot" class="action-btn" title="Save Postcard Photo (S)">
+            <button id="btn-screenshot" class="action-btn btn-snap" title="Save Postcard Photo (S)">
               <span class="btn-icon">📸</span>
               <span class="btn-label">Snap</span>
             </button>
@@ -67,56 +66,50 @@
           </div>
         </header>
 
-        <!-- Floating Announcement Toast -->
-        <div id="gesture-announcement" class="gesture-announcement hidden">
-          <span id="announcement-icon" class="announcement-icon">✨</span>
-          <span id="announcement-name" class="announcement-name">Anar Fountain</span>
-        </div>
-
-        <!-- Gesture Guide Footer Bar -->
+        <!-- Colorful, Vibrant Gesture Guide Dock -->
         <footer class="hud-footer">
           <div class="gesture-bar">
-            <div class="gesture-card" data-gesture="ROCKET">
+            <div class="gesture-card card-rocket" data-gesture="ROCKET">
               <span class="gesture-badge">☝️</span>
               <div class="gesture-info">
                 <span class="gesture-name">Rocket</span>
-                <span class="gesture-sub">Index Point</span>
+                <span class="gesture-sub">Point Up</span>
               </div>
             </div>
 
-            <div class="gesture-card" data-gesture="ANAR">
+            <div class="gesture-card card-anar" data-gesture="ANAR">
               <span class="gesture-badge">✊</span>
               <div class="gesture-info">
                 <span class="gesture-name">Anar</span>
-                <span class="gesture-sub">Closed Fist</span>
+                <span class="gesture-sub">Fist</span>
               </div>
             </div>
 
-            <div class="gesture-card" data-gesture="STARBURST">
+            <div class="gesture-card card-starburst" data-gesture="STARBURST">
               <span class="gesture-badge">✋</span>
               <div class="gesture-info">
                 <span class="gesture-name">Starburst</span>
-                <span class="gesture-sub">Open Palm</span>
+                <span class="gesture-sub">Palm</span>
               </div>
             </div>
 
-            <div class="gesture-card" data-gesture="ROMAN_CANDLE">
+            <div class="gesture-card card-roman" data-gesture="ROMAN_CANDLE">
               <span class="gesture-badge">✌️</span>
               <div class="gesture-info">
                 <span class="gesture-name">Roman Candle</span>
-                <span class="gesture-sub">Peace Sign</span>
+                <span class="gesture-sub">Peace</span>
               </div>
             </div>
 
-            <div class="gesture-card" data-gesture="PHOOLJHADI">
+            <div class="gesture-card card-phooljhadi" data-gesture="PHOOLJHADI">
               <span class="gesture-badge">👌</span>
               <div class="gesture-info">
                 <span class="gesture-name">Phooljhadi</span>
-                <span class="gesture-sub">Pinch & Draw</span>
+                <span class="gesture-sub">Pinch</span>
               </div>
             </div>
 
-            <div class="gesture-card" data-gesture="CHAKRI">
+            <div class="gesture-card card-chakri" data-gesture="CHAKRI">
               <span class="gesture-badge">👇</span>
               <div class="gesture-info">
                 <span class="gesture-name">Chakri</span>
@@ -124,18 +117,18 @@
               </div>
             </div>
 
-            <div class="gesture-card" data-gesture="GRAND_FINALE">
+            <div class="gesture-card card-finale" data-gesture="GRAND_FINALE">
               <span class="gesture-badge">🙌</span>
               <div class="gesture-info">
-                <span class="gesture-name">Grand Finale</span>
-                <span class="gesture-sub">Both Hands Open</span>
+                <span class="gesture-name">Finale</span>
+                <span class="gesture-sub">Both Palms</span>
               </div>
             </div>
           </div>
         </footer>
       </div>
 
-      <!-- Creator Mode Floating Pill (Always shown when HUD hidden to allow restoring) -->
+      <!-- Creator Mode Floating Pill (Shown when HUD hidden) -->
       <button id="btn-restore-hud" class="restore-hud-btn hidden" title="Show Controls (Press H)">
         <span>👁️ Show HUD [H]</span>
       </button>
@@ -144,6 +137,31 @@
       <div id="watermark" class="festive-watermark">
         <span class="watermark-gold">✨ Happy Diwali ✨</span>
         <span class="watermark-sub">Fireworks Conductor</span>
+      </div>
+
+      <!-- Video Recording Preview Modal (Fog-Mirror Style) -->
+      <div id="recording-modal" class="recording-modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-card">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="modal-spark">🎆</span>
+              <span class="modal-title">Your Diwali Reel</span>
+            </div>
+            <button id="modal-close-btn" class="modal-close-btn" title="Close Preview">&times;</button>
+          </div>
+          <div class="modal-video-wrapper">
+            <video id="preview-video" controls autoplay loop playsinline></video>
+          </div>
+          <div class="modal-footer">
+            <button id="modal-download-btn" class="modal-btn btn-download">
+              <span>⬇️ Download Reel (.webm)</span>
+            </button>
+            <button id="modal-retake-btn" class="modal-btn btn-retake">
+              <span>✕ Retake</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
