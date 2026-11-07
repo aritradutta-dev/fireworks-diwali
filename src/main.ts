@@ -108,14 +108,20 @@ class FireworksApp {
     window.addEventListener('keydown', unlockAudio, { once: true });
 
     // 1. Creator Mode Toggle (H key)
+    const cornerLeft = document.getElementById('corner-left');
+    const cornerRight = document.getElementById('corner-right');
     const toggleCreatorMode = () => {
       this.isCreatorMode = !this.isCreatorMode;
       if (this.isCreatorMode) {
         this.hudElement.classList.add('hud-hidden');
         this.restoreHudBtn.classList.remove('hidden');
+        if (cornerLeft) cornerLeft.style.opacity = '0';
+        if (cornerRight) cornerRight.style.opacity = '0';
       } else {
         this.hudElement.classList.remove('hud-hidden');
         this.restoreHudBtn.classList.add('hidden');
+        if (cornerLeft) cornerLeft.style.opacity = '1';
+        if (cornerRight) cornerRight.style.opacity = '1';
       }
     };
     this.restoreHudBtn.addEventListener('click', toggleCreatorMode);
