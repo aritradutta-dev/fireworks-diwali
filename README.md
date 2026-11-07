@@ -32,8 +32,7 @@ Open `http://localhost:5173` in Google Chrome or Arc. Grant camera permission wh
 | **3** | **Starburst (Aerial Shell)** | ✋ **Open palm (5 spread)** | Instant radial explosive detonation originating at palm center; dual concentric rings (white-hot core + chromatic perimeter) | Sharp initial pop $\to$ deep $40\text{Hz}$ sub-bass boom |
 | **4** | **Roman Candle** | ✌️ **Peace sign (Index + Middle)** | 5 rapid sequential fireballs (Ruby, Emerald, Gold, Blue, Violet) shooting upward, each bursting into 35 twinkling stars | Crisp rhythmic "fwoomp" pops |
 | **5** | **Phooljhadi (Sparkler)** | 👌 **Pinch (Thumb + Index)** | Continuous crackling sparkler following pinch coordinates with branching jitter sparks; enables drawing glowing shapes in mid-air | Granular micro-impulse crackler modulated by hand movement |
-| **6** | **Chakri (Ground Spinner)** | 🔄 **Index circle trace** | 4-nozzle spinning wheel rotating at $32\text{ rad/s}$ spraying tangential sparks in an Archimedean spiral of fire | Resonant frequency-modulated spinning whir |
-| **7** | **Grand Finale** | 🙌 **Both hands open palms** | Multi-shell salvo cascading across the entire screen, filling the night sky with golden brocade willows | Staggered barrage of rocket launches and thunderous booms |
+| **6** | **Grand Finale** | 🙌 **Both hands open palms** | Multi-shell salvo cascading across the entire screen, culminating in a glowing "HAPPY DIWALI" centerpiece | Staggered barrage of rocket launches and thunderous booms |
 
 ---
 

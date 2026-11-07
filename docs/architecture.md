@@ -10,7 +10,7 @@ flowchart TD
     VideoElem --> Vision["Vision Engine (@mediapipe/tasks-vision)"]
     Vision --> Stabilizer["Hysteresis & Gesture Classifier"]
     
-    Stabilizer -->|"Triggers (Rocket, Anar, Chakri...)"| Director["Pyrotechnic Director"]
+    Stabilizer -->|"Triggers (Rocket, Anar, Starburst...)"| Director["Pyrotechnic Director"]
     
     Director --> ParticleSim["Particle Physics Engine (Canvas 2D)"]
     Director --> AudioSynth["Procedural Web Audio Engine"]
@@ -43,9 +43,8 @@ flowchart TD
   2. `ANAR` (Fountain): Closed fist (no fingers extended).
   3. `STARBURST`: All five fingers spread wide.
   4. `ROMAN_CANDLE`: Peace sign (index + middle extended, ring + pinky curled).
-  5. `PHOOLJHADI` (Sparkler): Pinch (distance between thumb tip and index tip < 35px).
-  6. `CHAKRI` (Spinner): Circular angular trajectory of index fingertip (> 270° in 500ms).
-  7. `GRAND_FINALE`: Both hands detected with open palms.
+  5. `PHOOLJHADI` (Sparkler): Pinch (distance between thumb tip and index tip < 38px).
+  6. `GRAND_FINALE`: Both hands detected with open palms.
 
 ### 2.3 Particle Physics Engine (`src/particles/`)
 - **Particle State:** `[x, y, vx, vy, prevX, prevY, colorR, colorG, colorB, alpha, life, maxLife, size, decay, drag, gravity]`.
@@ -59,7 +58,6 @@ flowchart TD
 - **Explosion/Boom:** Multi-layered sub-bass sine drop ($90\text{Hz} \to 25\text{Hz}$) + resonant filtered pink noise.
 - **Fountain / Anar:** Continuous sizzle combining high-pass filtered white noise with randomized crackle impulses.
 - **Sparkler:** Micro-impulse crackler with variable density and pitch jitter.
-- **Chakri:** Modulated bandpass whir with oscillating stereo panning.
 
 ### 2.5 Capture Engine (`src/capture/`)
 - **MediaStreamDestination:** Web Audio destination node mixed directly into the recording track.
