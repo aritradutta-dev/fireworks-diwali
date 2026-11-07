@@ -18,7 +18,7 @@ export class VideoCompositor {
   public width: number = window.innerWidth;
   public height: number = window.innerHeight;
   public isCameraReady: boolean = false;
-  public dimming: number = 0.42;
+  public dimming: number = 0.60;
   public contrast: number = 1.15;
   private stream: MediaStream | null = null;
 
