@@ -359,10 +359,10 @@ body {
 }
 
 .action-btn.btn-active {
-  background: rgba(255, 179, 0, 0.2);
-  border-color: var(--gold-amber);
-  color: var(--gold-primary);
-  box-shadow: 0 0 18px var(--amber-glow);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--glass-border);
+  color: var(--text-muted);
+  box-shadow: none;
 }
 
 /* Record Button with Festive Sindoor Red */
@@ -475,59 +475,6 @@ body {
   font-size: 0.64rem;
   color: var(--text-muted);
   white-space: nowrap;
-}
-
-/* Individual Festive Themes on Active Gestures */
-.card-rocket.active {
-  background: rgba(255, 179, 0, 0.25);
-  border-color: #ffb300;
-  box-shadow: 0 0 24px var(--amber-glow);
-  transform: translateY(-3px) scale(1.02);
-}
-.card-rocket.active .gesture-name { color: #ffd54f; }
-
-.card-anar.active {
-  background: rgba(255, 111, 0, 0.26);
-  border-color: #ff6f00;
-  box-shadow: 0 0 24px rgba(255, 111, 0, 0.6);
-  transform: translateY(-3px) scale(1.02);
-}
-.card-anar.active .gesture-name { color: #ff9e80; }
-
-.card-starburst.active {
-  background: rgba(211, 47, 47, 0.26);
-  border-color: #ff1744;
-  box-shadow: 0 0 26px var(--red-glow);
-  transform: translateY(-3px) scale(1.02);
-}
-.card-starburst.active .gesture-name { color: #ff80ab; }
-
-.card-roman.active {
-  background: rgba(0, 229, 255, 0.22);
-  border-color: #00e5ff;
-  box-shadow: 0 0 24px var(--cyan-glow);
-  transform: translateY(-3px) scale(1.02);
-}
-.card-roman.active .gesture-name { color: #84ffff; }
-
-.card-phooljhadi.active {
-  background: rgba(255, 238, 88, 0.26);
-  border-color: #ffee58;
-  box-shadow: 0 0 24px rgba(255, 238, 88, 0.55);
-  transform: translateY(-3px) scale(1.02);
-}
-.card-phooljhadi.active .gesture-name { color: #fff9c4; }
-
-.card-finale.active {
-  background: linear-gradient(135deg, rgba(255, 179, 0, 0.3) 0%, rgba(211, 47, 47, 0.3) 100%);
-  border-color: #ffd700;
-  box-shadow: 0 0 34px var(--gold-glow), 0 0 60px var(--red-glow);
-  transform: translateY(-4px) scale(1.04);
-}
-.card-finale.active .gesture-name {
-  background: linear-gradient(135deg, #fff 0%, #ffd700 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 /* Creator Mode Floating Button */
@@ -669,28 +616,21 @@ body {
 .reel-card-meta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 2px;
-}
-
-.reel-badge {
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: #ffd54f;
-  letter-spacing: 0.02em;
+  justify-content: flex-end;
+  padding: 2px 4px 0;
 }
 
 .reel-duration {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
 }
 
 .reel-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 2px;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 .hud-btn {
@@ -702,12 +642,17 @@ body {
 }
 
 .hud-btn-label {
-  padding: 0.4rem 0.75rem;
+  padding: 0.45rem 0.65rem;
   border-radius: 999px;
-  font-size: 0.76rem;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
   font-weight: 600;
   flex: 1;
   text-align: center;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .hud-btn-label:hover {
@@ -718,27 +663,31 @@ body {
 .btn-save {
   background: linear-gradient(135deg, #ffd700 0%, #ff8f00 100%);
   color: #1a050d;
+  font-family: var(--font-ui);
   font-weight: 700;
   border: none;
-  box-shadow: 0 2px 10px rgba(255, 179, 0, 0.4);
+  box-shadow: 0 2px 10px rgba(255, 179, 0, 0.35);
 }
 
 .btn-save:hover {
   background: linear-gradient(135deg, #ffea00 0%, #ffa000 100%);
-  box-shadow: 0 4px 14px rgba(255, 179, 0, 0.6);
+  box-shadow: 0 4px 14px rgba(255, 179, 0, 0.55);
 }
 
 .btn-dismiss {
-  flex: 0 0 32px;
-  padding: 0.4rem 0;
-  border-radius: 50%;
+  flex: 1;
+  border-radius: 999px;
   color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
+  font-family: var(--font-ui);
+  font-weight: 600;
 }
 
 .btn-dismiss:hover {
   color: #fff;
-  background: rgba(211, 47, 47, 0.35);
-  border-color: #ff3366;
+  background: rgba(211, 47, 47, 0.25);
+  border-color: rgba(255, 51, 102, 0.5);
 }
 
 /* Full Video Dialog (Fog-Mirror Style modal on 'View') */

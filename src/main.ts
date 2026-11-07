@@ -4,7 +4,6 @@ import { VisionEngine } from './vision/visionEngine';
 import { FireworkDirector } from './fireworks/fireworkDirector';
 import { PyroAudioEngine } from './audio/pyroAudioEngine';
 import { CaptureEngine } from './capture/captureEngine';
-import { DetectedGesture } from './vision/gestureTypes';
 
 class FireworksApp {
   private compositor: VideoCompositor;
@@ -38,7 +37,6 @@ class FireworksApp {
   private reelDialogSaveBtn: HTMLElement;
   private reelDialogCloseBtn: HTMLElement;
 
-  private gestureCards: Map<string, HTMLElement> = new Map();
   private isCreatorMode: boolean = false;
   private lastFrameTime: number = performance.now();
   private recordedVideoUrl: string = '';
@@ -68,12 +66,6 @@ class FireworksApp {
     this.reelDialogVideo = document.getElementById('reel-dialog-video') as HTMLVideoElement;
     this.reelDialogSaveBtn = document.getElementById('reel-dialog-save-btn') as HTMLElement;
     this.reelDialogCloseBtn = document.getElementById('reel-dialog-close-btn') as HTMLElement;
-
-    // Cache gesture cards
-    document.querySelectorAll<HTMLElement>('.gesture-card').forEach((card) => {
-      const g = card.getAttribute('data-gesture');
-      if (g) this.gestureCards.set(g, card);
-    });
 
     // Subsystems
     this.compositor = new VideoCompositor({ canvas, video });
@@ -339,20 +331,8 @@ class FireworksApp {
     // 5. Draw Debug skeleton if active
     this.vision.drawDebugSkeleton(this.compositor.ctx);
 
-    // 6. Update bottom gesture bar active highlight
-    this.updateBottomBar(activeGestures);
-
     requestAnimationFrame(this.loop);
   };
-
-  private updateBottomBar(gestures: DetectedGesture[]): void {
-    this.gestureCards.forEach((card) => card.classList.remove('active'));
-    if (gestures.length > 0) {
-      const primary = gestures[0];
-      const card = this.gestureCards.get(primary.type);
-      if (card) card.classList.add('active');
-    }
-  }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
