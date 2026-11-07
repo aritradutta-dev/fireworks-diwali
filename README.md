@@ -3,6 +3,9 @@
 > **Turn your hands into authentic Diwali fireworks.**
 > Wave, point, spin, spread — every gesture ignites a distinct firework directly over your webcam feed in real-time. Record reels, download festive postcards, and conduct the night sky.
 
+👉 **Live Demo:** [https://gesture-fireworks.netlify.app](https://gesture-fireworks.netlify.app)  
+📦 **Repository:** [https://github.com/thedevangvishnu/fireworks-conductor](https://github.com/thedevangvishnu/fireworks-conductor)
+
 ---
 
 ## ⚡ Quick Start
@@ -32,7 +35,7 @@ Open `http://localhost:5173` in Google Chrome or Arc. Grant camera permission wh
 | **3** | **Starburst (Aerial Shell)** | ✋ **Open palm (5 spread)** | Instant radial explosive detonation originating at palm center; dual concentric rings (white-hot core + chromatic perimeter) | Sharp initial pop $\to$ deep $40\text{Hz}$ sub-bass boom |
 | **4** | **Roman Candle** | ✌️ **Peace sign (Index + Middle)** | 5 rapid sequential fireballs (Ruby, Emerald, Gold, Blue, Violet) shooting upward, each bursting into 35 twinkling stars | Crisp rhythmic "fwoomp" pops |
 | **5** | **Phooljhadi (Sparkler)** | 👌 **Pinch (Thumb + Index)** | Continuous crackling sparkler following pinch coordinates with branching jitter sparks; enables drawing glowing shapes in mid-air | Granular micro-impulse crackler modulated by hand movement |
-| **6** | **Grand Finale** | 🙌 **Both hands open palms** | Multi-shell salvo cascading across the entire screen, culminating in a glowing "HAPPY DIWALI" centerpiece | Staggered barrage of rocket launches and thunderous booms |
+| **6** | **Grand Finale** | 🙏 **Namaste (joined hands)** | Multi-shell salvo cascading across the entire screen, culminating in a glowing "HAPPY DIWALI" centerpiece with ceremonial diyas | Staggered barrage of rocket launches and thunderous booms |
 
 ---
 
