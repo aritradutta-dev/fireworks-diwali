@@ -21,6 +21,7 @@ export class CaptureEngine {
   private callbacks: CaptureCallbacks = {};
   public latestBlob: Blob | null = null;
   public latestVideoUrl: string | null = null;
+  public selectedExtension: string = 'mp4';
 
   constructor(canvas: HTMLCanvasElement, callbacks?: CaptureCallbacks) {
     this.canvas = canvas;
@@ -35,7 +36,8 @@ export class CaptureEngine {
     if (this.isRecording) return false;
 
     try {
-      const canvasStream = this.canvas.captureStream(30);
+      // 60 FPS capture matching display refresh for buttery-smooth video
+      const canvasStream = this.canvas.captureStream(60);
       const combinedStream = new MediaStream();
 
       canvasStream.getVideoTracks().forEach((track) => combinedStream.addTrack(track));
@@ -44,24 +46,34 @@ export class CaptureEngine {
         combinedStream.addTrack(audioTrack);
       }
 
-      const mimeTypes = [
-        'video/webm;codecs=vp9,opus',
-        'video/webm;codecs=vp8,opus',
-        'video/webm',
-        'video/mp4'
+      // Prioritize Hardware-Accelerated H.264 (MP4) on macOS VideoToolbox, then WebM
+      const candidates = [
+        { mime: 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', ext: 'mp4' },
+        { mime: 'video/mp4;codecs=avc1', ext: 'mp4' },
+        { mime: 'video/mp4', ext: 'mp4' },
+        { mime: 'video/webm;codecs=h264,opus', ext: 'mp4' },
+        { mime: 'video/webm;codecs=vp8,opus', ext: 'webm' },
+        { mime: 'video/webm', ext: 'webm' },
+        { mime: 'video/webm;codecs=vp9,opus', ext: 'webm' }
       ];
+
       let selectedMime = '';
-      for (const mime of mimeTypes) {
-        if (MediaRecorder.isTypeSupported(mime)) {
-          selectedMime = mime;
+      let selectedExt = 'mp4';
+      for (const cand of candidates) {
+        if (MediaRecorder.isTypeSupported(cand.mime)) {
+          selectedMime = cand.mime;
+          selectedExt = cand.ext;
           break;
         }
       }
+      this.selectedExtension = selectedExt;
 
-      this.recorder = selectedMime
-        ? new MediaRecorder(combinedStream, { mimeType: selectedMime })
-        : new MediaRecorder(combinedStream);
+      const options: MediaRecorderOptions = {
+        mimeType: selectedMime || undefined,
+        videoBitsPerSecond: 8_000_000 // 8 Mbps high-bitrate Full HD
+      };
 
+      this.recorder = new MediaRecorder(combinedStream, options);
       this.recordedChunks = [];
 
       this.recorder.ondataavailable = (e) => {
@@ -74,7 +86,8 @@ export class CaptureEngine {
         this.finishRecording();
       };
 
-      this.recorder.start(200);
+      // 1000ms timeslice to avoid rapid GOP keyframe flushes that cause playback judder
+      this.recorder.start(1000);
       this.isRecording = true;
       this.startTime = performance.now();
 
@@ -130,7 +143,7 @@ export class CaptureEngine {
     a.href = this.latestVideoUrl;
     const now = new Date();
     const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    a.download = filename || `Diwali-Reel-${timestamp}.webm`;
+    a.download = filename || `Diwali-Fireworks-${timestamp}.${this.selectedExtension}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

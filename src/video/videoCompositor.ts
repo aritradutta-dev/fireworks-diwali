@@ -36,12 +36,19 @@ export class VideoCompositor {
   }
 
   public resize(): void {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.width = window.innerWidth;
     this.height = window.innerHeight;
-    this.canvas.width = Math.floor(this.width * dpr);
-    this.canvas.height = Math.floor(this.height * dpr);
-    this.ctx.scale(dpr, dpr);
+
+    // Cap at Full HD (1920x1080) with 1:1 pixel mapping for 60 FPS real-time hardware recording
+    let scale = 1;
+    if (this.width > 1920 || this.height > 1080) {
+      scale = Math.min(1920 / this.width, 1080 / this.height);
+    }
+    this.canvas.width = Math.round(this.width * scale);
+    this.canvas.height = Math.round(this.height * scale);
+    if (scale !== 1) {
+      this.ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    }
   }
 
   public async startCamera(): Promise<MediaStream> {

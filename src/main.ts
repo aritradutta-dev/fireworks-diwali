@@ -36,7 +36,6 @@ class FireworksApp {
   private reelDialog: HTMLDialogElement;
   private reelDialogVideo: HTMLVideoElement;
   private reelDialogSaveBtn: HTMLElement;
-  private reelDialogDismissBtn: HTMLElement;
   private reelDialogCloseBtn: HTMLElement;
 
   private gestureCards: Map<string, HTMLElement> = new Map();
@@ -68,7 +67,6 @@ class FireworksApp {
     this.reelDialog = document.getElementById('reel-dialog') as HTMLDialogElement;
     this.reelDialogVideo = document.getElementById('reel-dialog-video') as HTMLVideoElement;
     this.reelDialogSaveBtn = document.getElementById('reel-dialog-save-btn') as HTMLElement;
-    this.reelDialogDismissBtn = document.getElementById('reel-dialog-dismiss-btn') as HTMLElement;
     this.reelDialogCloseBtn = document.getElementById('reel-dialog-close-btn') as HTMLElement;
 
     // Cache gesture cards
@@ -222,7 +220,6 @@ class FireworksApp {
     };
 
     this.reelDialogCloseBtn.addEventListener('click', closeFullDialog);
-    this.reelDialogDismissBtn.addEventListener('click', closeFullDialog);
     this.reelDialogSaveBtn.addEventListener('click', () => {
       this.capture.downloadCurrentReel();
     });
