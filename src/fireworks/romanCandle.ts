@@ -20,7 +20,7 @@ export class RomanCandle implements FireworkEffect {
   private balls: CandleBall[] = [];
   private shotsRemaining: number = 5;
   private shotTimer: number = 0;
-  private readonly SHOT_INTERVAL: number = 0.22; // 220ms between shots
+  private readonly SHOT_INTERVAL: number = 0.22;
 
   private colorSequence = [
     COLORS.CRIMSON,
@@ -53,14 +53,13 @@ export class RomanCandle implements FireworkEffect {
       x: this.x,
       y: this.y,
       vx: (Math.random() - 0.5) * 3,
-      vy: -(14 + Math.random() * 4),
+      vy: -(15 + Math.random() * 4),
       color,
-      life: 0.65 + Math.random() * 0.25
+      life: 0.68 + Math.random() * 0.22
     });
   }
 
   public update(dt: number, pool: ParticlePool): void {
-    // Check if ready for next shot in burst
     if (this.shotsRemaining > 0) {
       this.shotTimer += dt;
       if (this.shotTimer >= this.SHOT_INTERVAL) {
@@ -69,31 +68,29 @@ export class RomanCandle implements FireworkEffect {
       }
     }
 
-    // Update active flying fireballs
     for (let i = this.balls.length - 1; i >= 0; i--) {
       const b = this.balls[i];
       b.life -= dt;
       b.x += b.vx;
       b.y += b.vy;
-      b.vy += 0.2; // Gravity
+      b.vy += 0.22;
 
-      // Emit trailing comet sparks
-      for (let j = 0; j < 3; j++) {
+      // Comet trail
+      for (let j = 0; j < 4; j++) {
         pool.spawn({
-          x: b.x + (Math.random() - 0.5) * 4,
-          y: b.y + (Math.random() - 0.5) * 4,
+          x: b.x + (Math.random() - 0.5) * 5,
+          y: b.y + (Math.random() - 0.5) * 5,
           vx: (Math.random() - 0.5) * 2,
-          vy: Math.random() * 2 + 1,
+          vy: Math.random() * 2.5 + 1,
           color: b.color,
           fadeColor: COLORS.GOLD,
-          size: 2.5,
-          life: 0.28,
+          size: 3.0,
+          life: 0.32,
           drag: 0.94,
-          gravity: 0.05
+          gravity: 0.06
         });
       }
 
-      // Detonate into mini-peony burst
       if (b.life <= 0 || b.vy >= 0) {
         this.detonateBall(b, pool);
         this.balls.splice(i, 1);
@@ -106,11 +103,12 @@ export class RomanCandle implements FireworkEffect {
   }
 
   private detonateBall(b: CandleBall, pool: ParticlePool): void {
-    this.onSound?.('EXPLOSION', 0.45);
+    this.onSound?.('EXPLOSION', 0.55);
+    pool.addFlash(b.x, b.y, 280, b.color, 0.45);
 
-    for (let i = 0; i < 35; i++) {
+    for (let i = 0; i < 48; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 6 + 2;
+      const speed = Math.random() * 7.5 + 2.5;
       pool.spawn({
         x: b.x,
         y: b.y,
@@ -118,9 +116,9 @@ export class RomanCandle implements FireworkEffect {
         vy: Math.sin(angle) * speed,
         color: Math.random() < 0.25 ? COLORS.WHITE_HOT : b.color,
         fadeColor: COLORS.GOLD,
-        size: 2.8,
-        life: 0.75 + Math.random() * 0.3,
-        drag: 0.95,
+        size: 3.2,
+        life: 0.85 + Math.random() * 0.35,
+        drag: 0.955,
         gravity: 0.08,
         flicker: true,
         crackle: true

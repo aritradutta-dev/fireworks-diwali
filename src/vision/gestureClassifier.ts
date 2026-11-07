@@ -5,7 +5,7 @@ import {
 } from './gestureTypes';
 
 export class GestureClassifier {
-  // Gesture hold tracking for debouncing
+  // Gesture hold tracking for debouncing (-1 for dual-hand Namaste, 0/1 for single hands)
   private pendingGesture: Map<number, { type: GestureType; since: number }> = new Map();
   private lastFiredTime: Map<string, number> = new Map();
 
@@ -17,24 +17,55 @@ export class GestureClassifier {
     STARBURST: 850,
     ROMAN_CANDLE: 300,
     PHOOLJHADI: 0, // Continuous
-    GRAND_FINALE: 3000
+    GRAND_FINALE: 4000
   };
 
   private readonly HOLD_REQUIRED_MS = 100;
+  private readonly NAMASTE_HOLD_MS = 180;
 
-  public classify(hands: HandPose[], _screenW: number): DetectedGesture[] {
+  public classify(hands: HandPose[], screenW: number): DetectedGesture[] {
     const now = performance.now();
     const results: DetectedGesture[] = [];
 
-    // 1. Dual-Hand Check: Grand Finale (Priority 1)
+    // 1. Dual-Hand Check: Namaste Mudra for Grand Finale (Priority 1)
     if (hands.length >= 2) {
       const h1 = hands[0];
       const h2 = hands[1];
-      if (this.isAllFingersExtended(h1) && this.isAllFingersExtended(h2)) {
-        if (this.canTrigger('GRAND_FINALE', now)) {
+
+      const palmDist = Math.hypot(
+        h1.palmCenter.x - h2.palmCenter.x,
+        h1.palmCenter.y - h2.palmCenter.y
+      );
+      const tipDist = Math.hypot(
+        h1.landmarks[8].x - h2.landmarks[8].x,
+        h1.landmarks[8].y - h2.landmarks[8].y
+      );
+
+      const maxPalmDist = Math.max(140, screenW * 0.16);
+      const maxTipDist = Math.max(120, screenW * 0.14);
+
+      // Both hands pointing upwards in front of chest
+      const isPointingUp =
+        h1.landmarks[8].y < h1.landmarks[0].y - 20 &&
+        h2.landmarks[8].y < h2.landmarks[0].y - 20;
+
+      // Palms and fingers brought together
+      const isHandsTogether = palmDist < maxPalmDist && tipDist < maxTipDist;
+      const isFingersOpen =
+        (h1.extendedFingers.index || h1.extendedFingers.middle) &&
+        (h2.extendedFingers.index || h2.extendedFingers.middle);
+
+      if (isPointingUp && isHandsTogether && isFingersOpen) {
+        const pending = this.pendingGesture.get(-1);
+        if (!pending || pending.type !== 'GRAND_FINALE') {
+          this.pendingGesture.set(-1, { type: 'GRAND_FINALE', since: now });
+        } else if (
+          now - pending.since >= this.NAMASTE_HOLD_MS &&
+          this.canTrigger('GRAND_FINALE', now)
+        ) {
           results.push({
             type: 'GRAND_FINALE',
-            confidence: 0.98,
+            confidence: 0.99,
             triggerPoint: {
               x: (h1.palmCenter.x + h2.palmCenter.x) / 2,
               y: (h1.palmCenter.y + h2.palmCenter.y) / 2
@@ -43,9 +74,14 @@ export class GestureClassifier {
             isContinuous: false
           });
           this.markFired('GRAND_FINALE', now);
+          this.pendingGesture.delete(-1);
           return results;
         }
+      } else {
+        this.pendingGesture.delete(-1);
       }
+    } else {
+      this.pendingGesture.delete(-1);
     }
 
     // 2. Single-Hand Gestures
@@ -87,7 +123,7 @@ export class GestureClassifier {
     }
 
     // Direction check for index finger: pointing UP
-    const isIndexPointingUp = indexTip.y < indexPip.y - 10 && indexTip.y < wrist.y - 15;
+    const isIndexPointingUp = indexTip.y < indexPip.y - 12 && indexTip.y < wrist.y - 20;
 
     let candidate: GestureType = 'NONE';
     let triggerPoint = { x: indexTip.x, y: indexTip.y };

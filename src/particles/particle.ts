@@ -1,7 +1,7 @@
 /**
- * Next-Gen High-Fidelity Pyrotechnic Particle Engine
- * Features additive multi-pass bloom, volumetric trails,
- * ground bounce, and dynamic ambient illumination.
+ * Ultra High-Fidelity Pyrotechnic Particle Engine
+ * Multi-pass additive bloom, volumetric motion streaks,
+ * and dynamic ambient room illumination.
  */
 
 export interface ParticleColor {
@@ -29,7 +29,6 @@ export interface Particle {
   flicker: boolean;
   crackle: boolean;
   trail: boolean;
-  bounceFloor: number; // Y level to bounce off (0 = no bounce)
 }
 
 export interface AmbientFlash {
@@ -44,7 +43,7 @@ export interface AmbientFlash {
 export class ParticlePool {
   private pool: Particle[] = [];
   public activeCount: number = 0;
-  private readonly MAX_PARTICLES: number = 5500;
+  private readonly MAX_PARTICLES: number = 7500; // Increased pool for massive volcanic density
   public flashes: AmbientFlash[] = [];
 
   constructor() {
@@ -67,8 +66,7 @@ export class ParticlePool {
         gravity: 0.05,
         flicker: false,
         crackle: false,
-        trail: true,
-        bounceFloor: 0
+        trail: true
       });
     }
   }
@@ -87,7 +85,6 @@ export class ParticlePool {
     flicker?: boolean;
     crackle?: boolean;
     trail?: boolean;
-    bounceFloor?: number;
   }): Particle | null {
     for (let i = 0; i < this.MAX_PARTICLES; i++) {
       const p = this.pool[i];
@@ -101,7 +98,7 @@ export class ParticlePool {
         p.vy = config.vy;
         p.color = config.color;
         p.fadeColor = config.fadeColor || { r: 255, g: 160, b: 40 };
-        p.size = config.size ?? 3.0;
+        p.size = config.size ?? 3.2;
         p.life = config.life;
         p.maxLife = config.life;
         p.alpha = 1;
@@ -110,7 +107,6 @@ export class ParticlePool {
         p.flicker = config.flicker ?? false;
         p.crackle = config.crackle ?? false;
         p.trail = config.trail ?? true;
-        p.bounceFloor = config.bounceFloor ?? 0;
         this.activeCount++;
         return p;
       }
@@ -125,7 +121,7 @@ export class ParticlePool {
       radius,
       color,
       alpha: Math.min(1.0, intensity),
-      decay: 3.5 // Fades out in ~250ms
+      decay: 3.5
     });
   }
 
@@ -138,7 +134,7 @@ export class ParticlePool {
       p.life -= dt;
       if (p.life <= 0) {
         p.active = false;
-        if (p.crackle && onCrackle && Math.random() < 0.65) {
+        if (p.crackle && onCrackle && Math.random() < 0.7) {
           onCrackle(p.x, p.y, p.color);
         }
         continue;
@@ -153,24 +149,15 @@ export class ParticlePool {
       p.x += p.vx;
       p.y += p.vy;
 
-      // Ground bounce for Anar and Chakri sparks
-      if (p.bounceFloor > 0 && p.y >= p.bounceFloor) {
-        p.y = p.bounceFloor;
-        p.vy = -p.vy * 0.45;
-        p.vx *= 0.7;
-      }
-
-      // Non-linear fade: bright throughout most of life, quick falloff at end
       const lifeRatio = p.life / p.maxLife;
-      p.alpha = Math.min(1.0, Math.pow(lifeRatio, 1.4));
+      p.alpha = Math.min(1.0, Math.pow(lifeRatio, 1.35));
 
-      if (p.flicker && Math.random() < 0.3) {
-        p.alpha *= 0.4 + Math.random() * 0.6;
+      if (p.flicker && Math.random() < 0.35) {
+        p.alpha *= 0.35 + Math.random() * 0.65;
       }
     }
     this.activeCount = count;
 
-    // Update ambient screen flashes
     for (let f = this.flashes.length - 1; f >= 0; f--) {
       const flash = this.flashes[f];
       flash.alpha -= flash.decay * dt;
@@ -180,14 +167,11 @@ export class ParticlePool {
     }
   }
 
-  /**
-   * Multi-pass additive rendering with authentic pyrotechnic bloom
-   */
   public render(ctx: CanvasRenderingContext2D): void {
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
 
-    // 1. Render Dynamic Ambient Lighting (illuminates the scene / camera feed)
+    // 1. Dynamic Ambient Light Flash (casts light on user's face and room)
     for (const flash of this.flashes) {
       if (flash.alpha <= 0.01) continue;
       const grad = ctx.createRadialGradient(
@@ -200,7 +184,7 @@ export class ParticlePool {
       );
       const { r, g, b } = flash.color;
       grad.addColorStop(0, `rgba(${r},${g},${b},${(flash.alpha * 0.45).toFixed(3)})`);
-      grad.addColorStop(0.5, `rgba(${r},${g},${b},${(flash.alpha * 0.15).toFixed(3)})`);
+      grad.addColorStop(0.45, `rgba(${r},${g},${b},${(flash.alpha * 0.16).toFixed(3)})`);
       grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
 
       ctx.fillStyle = grad;
@@ -214,7 +198,7 @@ export class ParticlePool {
       return;
     }
 
-    // 2. Render Motion Blur Streaks & Glowing Halos
+    // 2. High-Energy Streaks & Halos
     for (let i = 0; i < this.MAX_PARTICLES; i++) {
       const p = this.pool[i];
       if (!p.active || p.alpha <= 0.01) continue;
@@ -227,10 +211,10 @@ export class ParticlePool {
       const colorStr = `rgba(${r},${g},${b},${p.alpha.toFixed(2)})`;
       const coreColorStr = `rgba(255,255,255,${(p.alpha * 0.95).toFixed(2)})`;
 
-      // Draw Motion Streak Line
+      // Motion Trail Line
       if (p.trail) {
         ctx.strokeStyle = colorStr;
-        ctx.lineWidth = Math.max(1.5, p.size * p.alpha);
+        ctx.lineWidth = Math.max(1.8, p.size * p.alpha);
         ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(p.prevX, p.prevY);
@@ -238,16 +222,16 @@ export class ParticlePool {
         ctx.stroke();
       }
 
-      // Draw Outer Radiant Halo (gives realistic bloom)
+      // Outer Bloom Halo
       ctx.fillStyle = colorStr;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * 1.8 * p.alpha, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.size * 1.9 * p.alpha, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw White-Hot Core Spark
+      // Blinding White-Hot Core Spark
       ctx.fillStyle = coreColorStr;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, Math.max(1.0, p.size * 0.6 * p.alpha), 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, Math.max(1.1, p.size * 0.65 * p.alpha), 0, Math.PI * 2);
       ctx.fill();
     }
 
