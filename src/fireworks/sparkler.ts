@@ -24,46 +24,51 @@ export class Sparkler implements FireworkEffect {
 
     this.onSound?.('SPARKLER_LOOP');
 
-    // Emit 18-22 high-velocity branching crackle sparks per frame
-    const sparkCount = 20;
+    // Localized golden glow around the pinch point
+    pool.addFlash(this.x, this.y, 160, COLORS.GOLD, 0.28);
+
+    // Emit 28 high-velocity, high-jitter branching sparks
+    const sparkCount = 26;
 
     for (let i = 0; i < sparkCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 8 + 3;
+      const speed = Math.random() * 11 + 3.5;
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
 
-      const isWhite = Math.random() < 0.35;
+      const isWhite = Math.random() < 0.4;
 
       pool.spawn({
-        x: this.x + (Math.random() - 0.5) * 6,
-        y: this.y + (Math.random() - 0.5) * 6,
+        x: this.x + (Math.random() - 0.5) * 8,
+        y: this.y + (Math.random() - 0.5) * 8,
         vx,
         vy,
         color: isWhite ? COLORS.WHITE_HOT : COLORS.GOLD,
         fadeColor: COLORS.AMBER,
-        size: 2.0 + Math.random() * 1.5,
-        life: 0.45 + Math.random() * 0.35,
+        size: 2.6 + Math.random() * 1.6,
+        life: 0.55 + Math.random() * 0.45,
         drag: 0.94,
-        gravity: 0.1,
+        gravity: 0.12,
         flicker: true,
         crackle: true
       });
     }
 
-    // Hot central core spark
-    pool.spawn({
-      x: this.x,
-      y: this.y,
-      vx: (Math.random() - 0.5) * 1.5,
-      vy: (Math.random() - 0.5) * 1.5,
-      color: COLORS.WHITE_HOT,
-      fadeColor: COLORS.GOLD,
-      size: 5.5,
-      life: 0.15,
-      drag: 0.9,
-      gravity: 0
-    });
+    // White-hot magnesium core flame
+    for (let j = 0; j < 3; j++) {
+      pool.spawn({
+        x: this.x + (Math.random() - 0.5) * 6,
+        y: this.y + (Math.random() - 0.5) * 6,
+        vx: (Math.random() - 0.5) * 2,
+        vy: (Math.random() - 0.5) * 2,
+        color: COLORS.WHITE_HOT,
+        fadeColor: COLORS.GOLD,
+        size: 7.5,
+        life: 0.15,
+        drag: 0.88,
+        gravity: 0
+      });
+    }
   }
 
   public stop(): void {

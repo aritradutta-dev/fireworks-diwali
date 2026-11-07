@@ -3,7 +3,7 @@ import { FireworkEffect, SoundTriggerCallback } from './fireworkTypes';
 import { COLORS, PALETTES } from './fireworkColors';
 
 export class Starburst implements FireworkEffect {
-  public active: boolean = false; // Detonates once immediately upon instantiation
+  public active: boolean = false;
 
   constructor(
     x: number,
@@ -11,22 +11,27 @@ export class Starburst implements FireworkEffect {
     pool: ParticlePool,
     onSound?: SoundTriggerCallback
   ) {
-    onSound?.('EXPLOSION', 1.2);
+    onSound?.('EXPLOSION', 1.3);
 
     const palette = PALETTES[Math.floor(Math.random() * PALETTES.length)];
     const primaryColor = palette[0];
     const secondaryColor = palette[1];
 
-    const particleCount = 280;
+    // 1. Massive Initial Screen Flash (illuminates user and room)
+    pool.addFlash(x, y, 650, primaryColor, 0.7);
+
+    // 2. Volumetric Particle Distribution (360 particles filling the entire sphere)
+    const particleCount = 340;
 
     for (let i = 0; i < particleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 14 + 3;
+      // Non-uniform power distribution fills the interior volume of the sphere
+      const speed = Math.pow(Math.random(), 0.65) * 16 + 2.5;
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
 
       const isSecondary = Math.random() < 0.35;
-      const isCore = Math.random() < 0.15;
+      const isCore = Math.random() < 0.18;
 
       pool.spawn({
         x,
@@ -35,32 +40,30 @@ export class Starburst implements FireworkEffect {
         vy,
         color: isCore ? COLORS.WHITE_HOT : isSecondary ? secondaryColor : primaryColor,
         fadeColor: isSecondary ? COLORS.GOLD : COLORS.DEEP_ORANGE,
-        size: 3.2,
-        life: 1.1 + Math.random() * 0.5,
+        size: 3.6,
+        life: 1.2 + Math.random() * 0.6,
         drag: 0.965,
-        gravity: 0.08,
+        gravity: 0.09,
         flicker: true,
-        crackle: Math.random() < 0.4
+        crackle: Math.random() < 0.55
       });
     }
 
-    // High-speed outer ring sparks
-    for (let j = 0; j < 60; j++) {
-      const angle = (j / 60) * Math.PI * 2;
-      const speed = 15 + Math.random() * 2;
+    // 3. Central Blazing Fireball Flash
+    for (let k = 0; k < 30; k++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 6;
       pool.spawn({
         x,
         y,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
-        color: primaryColor,
-        fadeColor: COLORS.WHITE_HOT,
-        size: 2.8,
-        life: 0.9,
-        drag: 0.96,
-        gravity: 0.06,
-        flicker: false,
-        crackle: true
+        color: COLORS.WHITE_HOT,
+        fadeColor: primaryColor,
+        size: 7.0,
+        life: 0.28,
+        drag: 0.88,
+        gravity: 0
       });
     }
   }

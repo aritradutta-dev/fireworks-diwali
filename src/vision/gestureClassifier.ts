@@ -12,7 +12,7 @@ interface TrajectoryPoint {
 }
 
 export class GestureClassifier {
-  // Trajectory buffer per hand index (0: left/first, 1: right/second)
+  // Trajectory buffer per hand index
   private indexTrajectories: Map<number, TrajectoryPoint[]> = new Map();
   private lastCircleTriggerTime: Map<number, number> = new Map();
 
@@ -23,22 +23,18 @@ export class GestureClassifier {
   // Cooldowns (ms)
   private readonly COOLDOWNS: Record<GestureType, number> = {
     NONE: 0,
-    ROCKET: 450,
+    ROCKET: 550, // Dedicated cooldown for single rocket shots
     ANAR: 0, // Continuous
-    STARBURST: 650,
-    ROMAN_CANDLE: 320, // Rapid shots
+    STARBURST: 850,
+    ROMAN_CANDLE: 300,
     PHOOLJHADI: 0, // Continuous
-    CHAKRI: 800,
-    GRAND_FINALE: 2200
+    CHAKRI: 1200, // Cooldown so it doesn't double-trigger
+    GRAND_FINALE: 3000
   };
 
-  private readonly HOLD_REQUIRED_MS = 90;
+  private readonly HOLD_REQUIRED_MS = 100;
 
-  /**
-   * Main classifier pass across detected hands.
-   * Returns active gestures ready to ignite fireworks.
-   */
-  public classify(hands: HandPose[], screenW: number, screenH: number): DetectedGesture[] {
+  public classify(hands: HandPose[], screenW: number, _screenH: number): DetectedGesture[] {
     const now = performance.now();
     const results: DetectedGesture[] = [];
 
@@ -46,14 +42,11 @@ export class GestureClassifier {
     if (hands.length >= 2) {
       const h1 = hands[0];
       const h2 = hands[1];
-      const h1AllOpen = this.isAllFingersExtended(h1);
-      const h2AllOpen = this.isAllFingersExtended(h2);
-
-      if (h1AllOpen && h2AllOpen) {
+      if (this.isAllFingersExtended(h1) && this.isAllFingersExtended(h2)) {
         if (this.canTrigger('GRAND_FINALE', now)) {
           results.push({
             type: 'GRAND_FINALE',
-            confidence: 0.95,
+            confidence: 0.98,
             triggerPoint: {
               x: (h1.palmCenter.x + h2.palmCenter.x) / 2,
               y: (h1.palmCenter.y + h2.palmCenter.y) / 2
@@ -69,7 +62,7 @@ export class GestureClassifier {
 
     // 2. Single-Hand Gestures
     hands.forEach((hand, idx) => {
-      const gesture = this.classifySingleHand(hand, idx, now, screenW, screenH);
+      const gesture = this.classifySingleHand(hand, idx, now, screenW);
       if (gesture) {
         results.push(gesture);
       }
@@ -82,49 +75,66 @@ export class GestureClassifier {
     hand: HandPose,
     handIndex: number,
     now: number,
-    screenW: number,
-    _screenH: number
+    screenW: number
   ): DetectedGesture | null {
     const { extendedFingers, landmarks, isPinching, palmCenter } = hand;
+    const wrist = landmarks[0];
+    const indexPip = landmarks[6];
     const indexTip = landmarks[8];
     const thumbTip = landmarks[4];
 
-    // Priority 2: Chakri (Index circular motion check)
-    // Only check if index is extended and ring + pinky are mostly curled
-    if (extendedFingers.index && !extendedFingers.pinky) {
-      this.recordTrajectory(handIndex, indexTip, now);
-      if (this.detectCircularMotion(handIndex, now, screenW)) {
-        if (this.canTrigger('CHAKRI', now, handIndex)) {
-          this.markFired('CHAKRI', now, handIndex);
-          return {
-            type: 'CHAKRI',
-            confidence: 0.9,
-            triggerPoint: { x: indexTip.x, y: indexTip.y },
-            handIndex,
-            handedness: hand.handedness,
-            isContinuous: false
-          };
-        }
-      }
+    // Priority 2: Phooljhadi (Pinch) — Evaluated before single fingers
+    if (isPinching) {
+      this.pendingGesture.delete(handIndex);
+      return {
+        type: 'PHOOLJHADI',
+        confidence: 0.95,
+        triggerPoint: {
+          x: (indexTip.x + thumbTip.x) / 2,
+          y: (indexTip.y + thumbTip.y) / 2
+        },
+        handIndex,
+        handedness: hand.handedness,
+        isContinuous: true
+      };
     }
 
-    // Determine Candidate Gesture
+    // Record trajectory for circular motion detection
+    this.recordTrajectory(handIndex, indexTip, now);
+
+    // Check if hand is currently performing circular motion
+    const isCircling = this.detectCircularMotion(handIndex, now, screenW);
+
+    // Direction check for index finger: pointing UP vs pointing DOWN
+    const isIndexPointingUp = indexTip.y < indexPip.y - 12 && indexTip.y < wrist.y - 20;
+    const isIndexPointingDown = indexTip.y > indexPip.y + 12 && indexTip.y > wrist.y + 10;
+
     let candidate: GestureType = 'NONE';
     let triggerPoint = { x: indexTip.x, y: indexTip.y };
     let isContinuous = false;
 
-    // Priority 3: Phooljhadi (Pinch)
-    if (isPinching) {
-      candidate = 'PHOOLJHADI';
-      triggerPoint = {
-        x: (indexTip.x + thumbTip.x) / 2,
-        y: (indexTip.y + thumbTip.y) / 2
-      };
-      isContinuous = true;
+    // Priority 3: Chakri (Ground Spinner)
+    // Triggered EITHER by index pointing DOWN 👇 (ground spinner!) OR by completed circle trace
+    if ((isIndexPointingDown || isCircling) && !extendedFingers.pinky && !extendedFingers.ring) {
+      if (this.canTrigger('CHAKRI', now, handIndex)) {
+        this.markFired('CHAKRI', now, handIndex);
+        return {
+          type: 'CHAKRI',
+          confidence: 0.92,
+          // Spawns beneath the finger on the ground
+          triggerPoint: { x: indexTip.x, y: Math.max(indexTip.y, palmCenter.y + 30) },
+          handIndex,
+          handedness: hand.handedness,
+          isContinuous: false
+        };
+      }
     }
-    // Priority 4: Rocket (Index only up)
+    // Priority 4: Rocket (☝️ Index Pointing UP only)
+    // Crucial: Only trigger if index is strictly pointing UP and NOT circling!
     else if (
       extendedFingers.index &&
+      isIndexPointingUp &&
+      !isCircling &&
       !extendedFingers.middle &&
       !extendedFingers.ring &&
       !extendedFingers.pinky
@@ -133,10 +143,11 @@ export class GestureClassifier {
       triggerPoint = { x: indexTip.x, y: indexTip.y };
       isContinuous = false;
     }
-    // Priority 5: Roman Candle (Peace Sign: index + middle up)
+    // Priority 5: Roman Candle (✌️ Peace Sign: Both Index & Middle pointing UP)
     else if (
       extendedFingers.index &&
       extendedFingers.middle &&
+      isIndexPointingUp &&
       !extendedFingers.ring &&
       !extendedFingers.pinky
     ) {
@@ -148,7 +159,7 @@ export class GestureClassifier {
       };
       isContinuous = false;
     }
-    // Priority 6: Anar (Closed Fist: no fingers extended)
+    // Priority 6: Anar (✊ Closed Fist: All fingers curled into palm)
     else if (
       !extendedFingers.index &&
       !extendedFingers.middle &&
@@ -157,12 +168,11 @@ export class GestureClassifier {
       !extendedFingers.thumb
     ) {
       candidate = 'ANAR';
-      // Fountain sprays upward from the top of the fist (middle MCP landmark 9)
       const fistTop = landmarks[9] || palmCenter;
-      triggerPoint = { x: fistTop.x, y: fistTop.y - 15 };
+      triggerPoint = { x: fistTop.x, y: fistTop.y - 10 };
       isContinuous = true;
     }
-    // Priority 7: Starburst (All 5 extended)
+    // Priority 7: Starburst (✋ Open Palm: All 5 fingers extended spread apart)
     else if (this.isAllFingersExtended(hand)) {
       candidate = 'STARBURST';
       triggerPoint = { x: palmCenter.x, y: palmCenter.y };
@@ -174,32 +184,28 @@ export class GestureClassifier {
       return null;
     }
 
-    // Hysteresis & Debounce check
+    // Debounce hold requirement
     const pending = this.pendingGesture.get(handIndex);
     if (!pending || pending.type !== candidate) {
       this.pendingGesture.set(handIndex, { type: candidate, since: now });
-      // If continuous, require brief hold before starting
       return null;
     }
 
-    // Has it been held long enough?
     if (now - pending.since < this.HOLD_REQUIRED_MS) {
       return null;
     }
 
-    // Check cooldown
     if (!this.canTrigger(candidate, now, handIndex)) {
       return null;
     }
 
-    // For non-continuous, mark fired now
     if (!isContinuous) {
       this.markFired(candidate, now, handIndex);
     }
 
     return {
       type: candidate,
-      confidence: 0.88,
+      confidence: 0.9,
       triggerPoint,
       handIndex,
       handedness: hand.handedness,
@@ -229,9 +235,6 @@ export class GestureClassifier {
     this.lastFiredTime.set(key, now);
   }
 
-  /**
-   * Records fingertip position history for trajectory analysis
-   */
   private recordTrajectory(handIdx: number, pt: ScreenLandmark, now: number): void {
     let list = this.indexTrajectories.get(handIdx);
     if (!list) {
@@ -240,25 +243,20 @@ export class GestureClassifier {
     }
     list.push({ x: pt.x, y: pt.y, time: now });
 
-    // Keep only last 600ms
-    const cutoff = now - 600;
+    // Keep last 450ms
+    const cutoff = now - 450;
     while (list.length > 0 && list[0].time < cutoff) {
       list.shift();
     }
   }
 
-  /**
-   * Detects circular path (Chakri gesture) from index trajectory
-   */
   private detectCircularMotion(handIdx: number, now: number, screenW: number): boolean {
     const list = this.indexTrajectories.get(handIdx);
-    if (!list || list.length < 16) return false;
+    if (!list || list.length < 14) return false;
 
-    // Minimum cooldown between circles
     const lastCircle = this.lastCircleTriggerTime.get(handIdx) || 0;
-    if (now - lastCircle < 700) return false;
+    if (now - lastCircle < 1000) return false;
 
-    // 1. Compute Centroid
     let sumX = 0;
     let sumY = 0;
     for (const pt of list) {
@@ -268,7 +266,6 @@ export class GestureClassifier {
     const cx = sumX / list.length;
     const cy = sumY / list.length;
 
-    // 2. Calculate average radius and angular coverage
     let sumRadius = 0;
     const angles: number[] = [];
 
@@ -280,25 +277,19 @@ export class GestureClassifier {
     }
 
     const avgRadius = sumRadius / list.length;
-    // Radius must be reasonable: between 25px and 20% of screen width
-    const minRadius = 25;
-    const maxRadius = Math.max(180, screenW * 0.22);
-    if (avgRadius < minRadius || avgRadius > maxRadius) return false;
+    if (avgRadius < 35 || avgRadius > screenW * 0.25) return false;
 
-    // 3. Accumulate total signed angular displacement
-    let totalAngleChange = 0;
+    let totalAngle = 0;
     for (let i = 1; i < angles.length; i++) {
       let diff = angles[i] - angles[i - 1];
-      // Normalize to [-PI, PI]
       while (diff > Math.PI) diff -= 2 * Math.PI;
       while (diff < -Math.PI) diff += 2 * Math.PI;
-      totalAngleChange += diff;
+      totalAngle += diff;
     }
 
-    // Check if user completed at least ~260 degrees of rotation (~4.5 radians)
-    if (Math.abs(totalAngleChange) >= 4.5) {
+    if (Math.abs(totalAngle) >= 4.8) {
       this.lastCircleTriggerTime.set(handIdx, now);
-      list.length = 0; // Clear trajectory once circle is confirmed
+      list.length = 0;
       return true;
     }
 

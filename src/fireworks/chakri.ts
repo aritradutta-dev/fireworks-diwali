@@ -7,7 +7,7 @@ export class Chakri implements FireworkEffect {
   private x: number;
   private y: number;
   private angle: number = 0;
-  private life: number = 1.85; // Spins for 1.85 seconds
+  private life: number = 2.4; // Spins furiously for 2.4s
   private onSound?: SoundTriggerCallback;
 
   constructor(x: number, y: number, onSound?: SoundTriggerCallback) {
@@ -27,53 +27,65 @@ export class Chakri implements FireworkEffect {
       return;
     }
 
-    // High angular velocity rotation: ~32 radians per second
-    this.angle += 32 * dt;
+    // High angular velocity rotation: accelerates then stabilizes
+    const spinSpeed = 38 + Math.sin(this.life * 4) * 6;
+    this.angle += spinSpeed * dt;
 
-    // 4 nozzles emitting sparks tangentially
+    // Dynamic ground illumination around the spinner
+    pool.addFlash(this.x, this.y, 220, COLORS.GOLD, 0.28);
+
+    // 4 major spiral nozzle arms
     const nozzles = 4;
     for (let n = 0; n < nozzles; n++) {
       const nozzleAngle = this.angle + (n * Math.PI * 2) / nozzles;
-      const nozzleRadius = 16;
-      const nx = this.x + Math.cos(nozzleAngle) * nozzleRadius;
-      const ny = this.y + Math.sin(nozzleAngle) * nozzleRadius;
 
-      // Tangential velocity vector
-      const tangentAngle = nozzleAngle + Math.PI / 2;
-      const speed = 10 + Math.random() * 8;
-      const vx = Math.cos(tangentAngle) * speed + (Math.random() - 0.5) * 2;
-      const vy = Math.sin(tangentAngle) * speed + (Math.random() - 0.5) * 2;
+      // Spawn a ribbon of sparks along each spiral arm
+      for (let s = 0; s < 5; s++) {
+        const radius = 20 + s * 12 + Math.random() * 8;
+        const nx = this.x + Math.cos(nozzleAngle) * radius;
+        const ny = this.y + Math.sin(nozzleAngle) * radius;
 
-      const isColor = Math.random() < 0.45;
+        // Tangential velocity with centrifugal outward expansion
+        const tangentAngle = nozzleAngle + Math.PI / 2 + (Math.random() - 0.5) * 0.35;
+        const speed = 12 + s * 3.5 + Math.random() * 8;
+        const vx = Math.cos(tangentAngle) * speed;
+        const vy = Math.sin(tangentAngle) * speed + 1.5; // Slight gravity pull
 
-      pool.spawn({
-        x: nx,
-        y: ny,
-        vx,
-        vy,
-        color: isColor ? COLORS.MAGENTA : COLORS.GOLD,
-        fadeColor: COLORS.DEEP_ORANGE,
-        size: 2.4,
-        life: 0.5 + Math.random() * 0.25,
-        drag: 0.965,
-        gravity: 0.05,
-        flicker: true,
-        crackle: Math.random() < 0.25
-      });
+        const isMagenta = Math.random() < 0.3;
+        const isWhite = Math.random() < 0.25;
+
+        pool.spawn({
+          x: nx,
+          y: ny,
+          vx,
+          vy,
+          color: isWhite ? COLORS.WHITE_HOT : isMagenta ? COLORS.MAGENTA : COLORS.GOLD,
+          fadeColor: isMagenta ? COLORS.CRIMSON : COLORS.DEEP_ORANGE,
+          size: 3.2,
+          life: 0.55 + Math.random() * 0.3,
+          drag: 0.955,
+          gravity: 0.12,
+          flicker: true,
+          crackle: Math.random() < 0.3,
+          bounceFloor: this.y + 120 // Ground bounce level
+        });
+      }
     }
 
-    // Glowing core disc
-    pool.spawn({
-      x: this.x,
-      y: this.y,
-      vx: (Math.random() - 0.5) * 0.5,
-      vy: (Math.random() - 0.5) * 0.5,
-      color: COLORS.WHITE_HOT,
-      fadeColor: COLORS.GOLD,
-      size: 7.0,
-      life: 0.08,
-      drag: 0.8,
-      gravity: 0
-    });
+    // Blazing white-hot center rotor disk
+    for (let c = 0; c < 3; c++) {
+      pool.spawn({
+        x: this.x + (Math.random() - 0.5) * 12,
+        y: this.y + (Math.random() - 0.5) * 12,
+        vx: (Math.random() - 0.5) * 2,
+        vy: (Math.random() - 0.5) * 2,
+        color: COLORS.WHITE_HOT,
+        fadeColor: COLORS.GOLD,
+        size: 9.0,
+        life: 0.12,
+        drag: 0.85,
+        gravity: 0
+      });
+    }
   }
 }

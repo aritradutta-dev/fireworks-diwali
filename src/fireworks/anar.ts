@@ -7,7 +7,6 @@ export class Anar implements FireworkEffect {
   private x: number;
   private y: number;
   private onSound?: SoundTriggerCallback;
-  private emitCooldown: number = 0;
 
   constructor(x: number, y: number, onSound?: SoundTriggerCallback) {
     this.x = x;
@@ -20,53 +19,56 @@ export class Anar implements FireworkEffect {
     this.y = y;
   }
 
-  public update(dt: number, pool: ParticlePool): void {
+  public update(_dt: number, pool: ParticlePool): void {
     if (!this.active) return;
 
     this.onSound?.('ANAR_LOOP');
 
-    this.emitCooldown += dt;
-    // Emit ~35-40 particles per frame for rich fountain density
-    const spawnCount = 28;
+    // Dynamic torch illumination on user's hand and room
+    pool.addFlash(this.x, this.y - 40, 240, COLORS.GOLD, 0.35);
+
+    // Roaring fountain spray: 45 high-energy sparks per frame
+    const spawnCount = 42;
 
     for (let i = 0; i < spawnCount; i++) {
-      // Cone angle: ~35 degrees spread upward
-      const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.65;
-      const speed = 12 + Math.random() * 11;
+      // Natural conical spray: ~38 degrees wide
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.72;
+      // High upward velocity
+      const speed = 15 + Math.random() * 14;
       const vx = Math.cos(angle) * speed + (Math.random() - 0.5) * 2;
       const vy = Math.sin(angle) * speed;
 
-      // Color variation: 80% golden sodium, 20% white-hot magnesium core
-      const isWhite = Math.random() < 0.22;
+      const isWhite = Math.random() < 0.28;
       const color = isWhite ? COLORS.WHITE_HOT : COLORS.GOLD;
       const fadeColor = isWhite ? COLORS.GOLD : COLORS.DEEP_ORANGE;
 
       pool.spawn({
-        x: this.x + (Math.random() - 0.5) * 12,
+        x: this.x + (Math.random() - 0.5) * 14,
         y: this.y + (Math.random() - 0.5) * 6,
         vx,
         vy,
         color,
         fadeColor,
-        size: 2.2 + Math.random() * 1.4,
-        life: 0.65 + Math.random() * 0.45,
+        size: 3.2 + Math.random() * 1.6,
+        life: 0.8 + Math.random() * 0.5,
         drag: 0.965,
-        gravity: 0.38, // Heavy fountain gravity curves sparks back down
+        gravity: 0.42, // Heavy gravity curves fountain down
         flicker: true,
-        crackle: Math.random() < 0.2
+        crackle: Math.random() < 0.35,
+        bounceFloor: this.y + 180
       });
     }
 
-    // Core base flame
-    for (let j = 0; j < 4; j++) {
+    // Blinding white-hot volcano jet at base of fist
+    for (let j = 0; j < 6; j++) {
       pool.spawn({
-        x: this.x + (Math.random() - 0.5) * 10,
-        y: this.y + (Math.random() - 0.5) * 6,
-        vx: (Math.random() - 0.5) * 2,
-        vy: -Math.random() * 4,
+        x: this.x + (Math.random() - 0.5) * 12,
+        y: this.y - Math.random() * 20,
+        vx: (Math.random() - 0.5) * 3,
+        vy: -(6 + Math.random() * 8),
         color: COLORS.WHITE_HOT,
         fadeColor: COLORS.GOLD,
-        size: 4.0,
+        size: 5.5,
         life: 0.25,
         drag: 0.9,
         gravity: 0.1

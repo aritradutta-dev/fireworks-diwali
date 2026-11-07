@@ -1,5 +1,7 @@
 /**
- * High-Performance Particle Engine with Additive Blending & Motion Trails
+ * Next-Gen High-Fidelity Pyrotechnic Particle Engine
+ * Features additive multi-pass bloom, volumetric trails,
+ * ground bounce, and dynamic ambient illumination.
  */
 
 export interface ParticleColor {
@@ -27,12 +29,23 @@ export interface Particle {
   flicker: boolean;
   crackle: boolean;
   trail: boolean;
+  bounceFloor: number; // Y level to bounce off (0 = no bounce)
+}
+
+export interface AmbientFlash {
+  x: number;
+  y: number;
+  radius: number;
+  color: ParticleColor;
+  alpha: number;
+  decay: number;
 }
 
 export class ParticlePool {
   private pool: Particle[] = [];
   public activeCount: number = 0;
-  private readonly MAX_PARTICLES: number = 3500;
+  private readonly MAX_PARTICLES: number = 5500;
+  public flashes: AmbientFlash[] = [];
 
   constructor() {
     for (let i = 0; i < this.MAX_PARTICLES; i++) {
@@ -47,14 +60,15 @@ export class ParticlePool {
         color: { r: 255, g: 255, b: 255 },
         fadeColor: { r: 255, g: 180, b: 0 },
         alpha: 1,
-        size: 2,
+        size: 3,
         life: 1,
         maxLife: 1,
         drag: 0.98,
         gravity: 0.05,
         flicker: false,
         crackle: false,
-        trail: true
+        trail: true,
+        bounceFloor: 0
       });
     }
   }
@@ -73,8 +87,8 @@ export class ParticlePool {
     flicker?: boolean;
     crackle?: boolean;
     trail?: boolean;
+    bounceFloor?: number;
   }): Particle | null {
-    // Find next inactive particle
     for (let i = 0; i < this.MAX_PARTICLES; i++) {
       const p = this.pool[i];
       if (!p.active) {
@@ -87,20 +101,32 @@ export class ParticlePool {
         p.vy = config.vy;
         p.color = config.color;
         p.fadeColor = config.fadeColor || { r: 255, g: 160, b: 40 };
-        p.size = config.size ?? 2.5;
+        p.size = config.size ?? 3.0;
         p.life = config.life;
         p.maxLife = config.life;
         p.alpha = 1;
-        p.drag = config.drag ?? 0.98;
-        p.gravity = config.gravity ?? 0.06;
+        p.drag = config.drag ?? 0.975;
+        p.gravity = config.gravity ?? 0.08;
         p.flicker = config.flicker ?? false;
         p.crackle = config.crackle ?? false;
         p.trail = config.trail ?? true;
+        p.bounceFloor = config.bounceFloor ?? 0;
         this.activeCount++;
         return p;
       }
     }
     return null;
+  }
+
+  public addFlash(x: number, y: number, radius: number, color: ParticleColor, intensity: number = 0.5): void {
+    this.flashes.push({
+      x,
+      y,
+      radius,
+      color,
+      alpha: Math.min(1.0, intensity),
+      decay: 3.5 // Fades out in ~250ms
+    });
   }
 
   public update(dt: number, onCrackle?: (x: number, y: number, color: ParticleColor) => void): void {
@@ -112,7 +138,7 @@ export class ParticlePool {
       p.life -= dt;
       if (p.life <= 0) {
         p.active = false;
-        if (p.crackle && onCrackle && Math.random() < 0.6) {
+        if (p.crackle && onCrackle && Math.random() < 0.65) {
           onCrackle(p.x, p.y, p.color);
         }
         continue;
@@ -122,63 +148,106 @@ export class ParticlePool {
       p.prevX = p.x;
       p.prevY = p.y;
 
-      // Physics integration
       p.vx *= p.drag;
       p.vy = p.vy * p.drag + p.gravity;
       p.x += p.vx;
       p.y += p.vy;
 
-      // Quadratic decay for natural spark extinction
-      const lifeRatio = p.life / p.maxLife;
-      p.alpha = lifeRatio * lifeRatio;
+      // Ground bounce for Anar and Chakri sparks
+      if (p.bounceFloor > 0 && p.y >= p.bounceFloor) {
+        p.y = p.bounceFloor;
+        p.vy = -p.vy * 0.45;
+        p.vx *= 0.7;
+      }
 
-      if (p.flicker && Math.random() < 0.25) {
-        p.alpha *= 0.35 + Math.random() * 0.65;
+      // Non-linear fade: bright throughout most of life, quick falloff at end
+      const lifeRatio = p.life / p.maxLife;
+      p.alpha = Math.min(1.0, Math.pow(lifeRatio, 1.4));
+
+      if (p.flicker && Math.random() < 0.3) {
+        p.alpha *= 0.4 + Math.random() * 0.6;
       }
     }
     this.activeCount = count;
+
+    // Update ambient screen flashes
+    for (let f = this.flashes.length - 1; f >= 0; f--) {
+      const flash = this.flashes[f];
+      flash.alpha -= flash.decay * dt;
+      if (flash.alpha <= 0) {
+        this.flashes.splice(f, 1);
+      }
+    }
   }
 
+  /**
+   * Multi-pass additive rendering with authentic pyrotechnic bloom
+   */
   public render(ctx: CanvasRenderingContext2D): void {
-    if (this.activeCount === 0) return;
-
     ctx.save();
-    // Emissive additive blending: overlapping sparks bloom white-hot naturally
     ctx.globalCompositeOperation = 'lighter';
 
+    // 1. Render Dynamic Ambient Lighting (illuminates the scene / camera feed)
+    for (const flash of this.flashes) {
+      if (flash.alpha <= 0.01) continue;
+      const grad = ctx.createRadialGradient(
+        flash.x,
+        flash.y,
+        0,
+        flash.x,
+        flash.y,
+        flash.radius
+      );
+      const { r, g, b } = flash.color;
+      grad.addColorStop(0, `rgba(${r},${g},${b},${(flash.alpha * 0.45).toFixed(3)})`);
+      grad.addColorStop(0.5, `rgba(${r},${g},${b},${(flash.alpha * 0.15).toFixed(3)})`);
+      grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(flash.x, flash.y, flash.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (this.activeCount === 0) {
+      ctx.restore();
+      return;
+    }
+
+    // 2. Render Motion Blur Streaks & Glowing Halos
     for (let i = 0; i < this.MAX_PARTICLES; i++) {
       const p = this.pool[i];
       if (!p.active || p.alpha <= 0.01) continue;
 
       const progress = 1 - p.life / p.maxLife;
-      // Interpolate color from birth color to fade color
       const r = Math.round(p.color.r + (p.fadeColor.r - p.color.r) * progress);
       const g = Math.round(p.color.g + (p.fadeColor.g - p.color.g) * progress);
       const b = Math.round(p.color.b + (p.fadeColor.b - p.color.b) * progress);
 
       const colorStr = `rgba(${r},${g},${b},${p.alpha.toFixed(2)})`;
-      const coreColorStr = `rgba(255,255,255,${(p.alpha * 0.85).toFixed(2)})`;
+      const coreColorStr = `rgba(255,255,255,${(p.alpha * 0.95).toFixed(2)})`;
 
-      // 1. Draw Sub-Frame Motion Blur Trail (Line from prevX,prevY to current x,y)
+      // Draw Motion Streak Line
       if (p.trail) {
         ctx.strokeStyle = colorStr;
-        ctx.lineWidth = Math.max(1, p.size * p.alpha);
+        ctx.lineWidth = Math.max(1.5, p.size * p.alpha);
+        ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(p.prevX, p.prevY);
         ctx.lineTo(p.x, p.y);
         ctx.stroke();
       }
 
-      // 2. Draw White-Hot Core Spark Head
-      ctx.fillStyle = coreColorStr;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, Math.max(0.8, p.size * 0.45 * p.alpha), 0, Math.PI * 2);
-      ctx.fill();
-
-      // 3. Draw Outer Chromatic Halo
+      // Draw Outer Radiant Halo (gives realistic bloom)
       ctx.fillStyle = colorStr;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * p.alpha, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.size * 1.8 * p.alpha, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw White-Hot Core Spark
+      ctx.fillStyle = coreColorStr;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, Math.max(1.0, p.size * 0.6 * p.alpha), 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -190,5 +259,6 @@ export class ParticlePool {
       this.pool[i].active = false;
     }
     this.activeCount = 0;
+    this.flashes = [];
   }
 }

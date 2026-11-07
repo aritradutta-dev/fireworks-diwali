@@ -4,7 +4,7 @@ import { Rocket } from './rocket';
 
 export class GrandFinale implements FireworkEffect {
   public active: boolean = true;
-  private duration: number = 2.8;
+  private duration: number = 3.2;
   private timer: number = 0;
   private rocketInterval: number = 0.22;
   private nextRocketTime: number = 0;
@@ -21,15 +21,17 @@ export class GrandFinale implements FireworkEffect {
     this.screenW = screenW;
     this.screenH = screenH;
     this.onSound = onSound;
+    this.onSound?.('FINALE');
     this.spawnSalvo();
   }
 
   private spawnSalvo(): void {
-    // Launch 2 staggered rockets across screen
-    for (let i = 0; i < 2; i++) {
-      const launchX = this.screenW * (0.15 + Math.random() * 0.7);
+    // Launch 2-3 staggered rockets across the screen
+    const count = 2 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < count; i++) {
+      const launchX = this.screenW * (0.12 + Math.random() * 0.76);
       const launchY = this.screenH;
-      const targetY = this.screenH * (0.15 + Math.random() * 0.35);
+      const targetY = this.screenH * (0.12 + Math.random() * 0.38);
 
       this.rockets.push(new Rocket(launchX, launchY, targetY, this.onSound));
     }
@@ -40,12 +42,11 @@ export class GrandFinale implements FireworkEffect {
 
     if (this.timer < this.duration) {
       if (this.timer >= this.nextRocketTime) {
-        this.nextRocketTime = this.timer + this.rocketInterval + Math.random() * 0.1;
+        this.nextRocketTime = this.timer + this.rocketInterval + Math.random() * 0.08;
         this.spawnSalvo();
       }
     }
 
-    // Update active rockets in finale
     for (let i = this.rockets.length - 1; i >= 0; i--) {
       const r = this.rockets[i];
       r.update(dt, pool);

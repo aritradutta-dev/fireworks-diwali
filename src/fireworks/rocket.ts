@@ -21,8 +21,8 @@ export class Rocket implements FireworkEffect {
   ) {
     this.x = startX;
     this.y = startY;
-    this.vx = (Math.random() - 0.5) * 2.5;
-    this.vy = -(16 + Math.random() * 4); // Fast upward velocity
+    this.vx = (Math.random() - 0.5) * 2.8;
+    this.vy = -(18 + Math.random() * 5); // Fast upward velocity
     this.targetY = targetY;
     this.color = getRandomColor();
     this.onSound = onSound;
@@ -33,33 +33,45 @@ export class Rocket implements FireworkEffect {
   public update(dt: number, pool: ParticlePool): void {
     if (!this.active) return;
 
-    // Advance missile head
     this.x += this.vx;
     this.y += this.vy;
-    this.vy += 0.25; // Gentle gravity on ascent
+    this.vy += 0.28; // Gravity on ascent
 
-    // Emit trailing smoke & golden spark tail
+    // Emit trailing smoke & blazing spark plume
     this.trailTimer += dt;
-    if (this.trailTimer > 0.015) {
+    if (this.trailTimer > 0.012) {
       this.trailTimer = 0;
-      // Tail sparks
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 5; i++) {
         pool.spawn({
-          x: this.x + (Math.random() - 0.5) * 4,
-          y: this.y + (Math.random() - 0.5) * 4,
-          vx: (Math.random() - 0.5) * 2.2,
-          vy: Math.random() * 3 + 1,
+          x: this.x + (Math.random() - 0.5) * 5,
+          y: this.y + (Math.random() - 0.5) * 5,
+          vx: (Math.random() - 0.5) * 3,
+          vy: Math.random() * 4 + 2,
           color: COLORS.GOLD,
           fadeColor: COLORS.DEEP_ORANGE,
-          size: 2.2,
-          life: 0.35 + Math.random() * 0.2,
-          drag: 0.95,
-          gravity: 0.08
+          size: 2.8,
+          life: 0.45 + Math.random() * 0.25,
+          drag: 0.94,
+          gravity: 0.1
         });
       }
     }
 
-    // Detonate when reaching target height or velocity reverses
+    // Rocket head glow
+    pool.spawn({
+      x: this.x,
+      y: this.y,
+      vx: 0,
+      vy: 0,
+      color: COLORS.WHITE_HOT,
+      fadeColor: COLORS.GOLD,
+      size: 6.0,
+      life: 0.08,
+      drag: 0.9,
+      gravity: 0
+    });
+
+    // Detonate when reaching apex
     if (this.y <= this.targetY || this.vy >= -1) {
       this.detonate(pool);
       this.active = false;
@@ -67,16 +79,22 @@ export class Rocket implements FireworkEffect {
   }
 
   private detonate(pool: ParticlePool): void {
-    this.onSound?.('EXPLOSION', 1.0);
+    this.onSound?.('EXPLOSION', 1.2);
 
-    const particleCount = 220 + Math.floor(Math.random() * 60);
-    const isWillow = Math.random() < 0.45; // Golden willow droop vs Peony burst
+    // Concussive flash illuminating the sky
+    pool.addFlash(this.x, this.y, 600, this.color, 0.65);
+
+    const particleCount = 280 + Math.floor(Math.random() * 70);
+    const isWillow = Math.random() < 0.5;
     const burstColor = isWillow ? COLORS.GOLD : this.color;
     const secondaryColor = isWillow ? COLORS.AMBER : COLORS.WHITE_HOT;
 
     for (let i = 0; i < particleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = isWillow ? Math.random() * 9 + 2 : Math.random() * 12 + 3;
+      const speed = isWillow
+        ? Math.pow(Math.random(), 0.6) * 12 + 2.5
+        : Math.pow(Math.random(), 0.6) * 15 + 3.5;
+
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
 
@@ -87,19 +105,19 @@ export class Rocket implements FireworkEffect {
         vy,
         color: Math.random() < 0.2 ? COLORS.WHITE_HOT : burstColor,
         fadeColor: secondaryColor,
-        size: isWillow ? 2.6 : 3.0,
-        life: isWillow ? 1.6 + Math.random() * 0.6 : 1.2 + Math.random() * 0.4,
+        size: isWillow ? 3.0 : 3.5,
+        life: isWillow ? 1.8 + Math.random() * 0.7 : 1.3 + Math.random() * 0.5,
         drag: isWillow ? 0.97 : 0.96,
-        gravity: isWillow ? 0.12 : 0.07, // Willows droop heavily
+        gravity: isWillow ? 0.14 : 0.08, // Willows droop heavily
         flicker: true,
-        crackle: Math.random() < 0.35
+        crackle: Math.random() < 0.45
       });
     }
 
-    // Central flash
-    for (let j = 0; j < 25; j++) {
+    // Central explosion burst flash
+    for (let j = 0; j < 35; j++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 5;
+      const speed = Math.random() * 6.5;
       pool.spawn({
         x: this.x,
         y: this.y,
@@ -107,8 +125,8 @@ export class Rocket implements FireworkEffect {
         vy: Math.sin(angle) * speed,
         color: COLORS.WHITE_HOT,
         fadeColor: burstColor,
-        size: 4.5,
-        life: 0.3,
+        size: 7.0,
+        life: 0.32,
         drag: 0.88,
         gravity: 0
       });

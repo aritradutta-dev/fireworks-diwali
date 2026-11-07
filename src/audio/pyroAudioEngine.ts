@@ -1,7 +1,7 @@
 /**
- * Procedural Web Audio Pyrotechnics Synthesizer
- * Zero external audio files. 100% synthesized in real-time.
- * Supports output to screen audio as well as MediaStreamDestination for video recording.
+ * Authentic Pyrotechnics Audio Engine
+ * Loads and plays real recorded Diwali firecracker samples with zero latency,
+ * pitch randomization, smooth looping, and fallback synthesis.
  */
 
 export class PyroAudioEngine {
@@ -11,18 +11,28 @@ export class PyroAudioEngine {
   public isMuted: boolean = false;
   private isUnlocked: boolean = false;
 
-  // Active continuous loop nodes
+  // Decoded Audio Buffers
+  private buffers: Map<string, AudioBuffer> = new Map();
+
+  // Active continuous loop source nodes
+  private anarLoopSource: AudioBufferSourceNode | null = null;
   private anarGain: GainNode | null = null;
-  private anarLastSeen: number = 0;
+  private anarActive: boolean = false;
 
+  private sparklerLoopSource: AudioBufferSourceNode | null = null;
   private sparklerGain: GainNode | null = null;
-  private sparklerLastSeen: number = 0;
+  private sparklerActive: boolean = false;
 
+  private chakriLoopSource: AudioBufferSourceNode | null = null;
   private chakriGain: GainNode | null = null;
-  private chakriLastSeen: number = 0;
+  private chakriActive: boolean = false;
+
+  private lastAnarPulse: number = 0;
+  private lastSparklerPulse: number = 0;
+  private lastChakriPulse: number = 0;
 
   constructor() {
-    // AudioContext will be unlocked on first user interaction
+    // Lazy AudioContext initialization
   }
 
   public unlock(): void {
@@ -34,22 +44,54 @@ export class PyroAudioEngine {
     }
 
     try {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       this.ctx = new AudioCtx();
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.value = this.isMuted ? 0 : 0.85;
+      this.masterGain.gain.value = this.isMuted ? 0 : 0.95;
 
-      // Connect to normal speakers
       this.masterGain.connect(this.ctx.destination);
 
-      // Create recording destination track for MediaRecorder
+      // Create stream destination for recording
       this.recordingDestination = this.ctx.createMediaStreamDestination();
       this.masterGain.connect(this.recordingDestination);
 
       this.isUnlocked = true;
-      this.initContinuousLoops();
+
+      // Load all authentic audio samples
+      this.preloadSamples();
+
+      // Start continuous loop watchdog
+      window.setInterval(() => this.watchdog(), 80);
     } catch (e) {
-      console.warn('Web Audio unlock failed:', e);
+      console.warn('AudioContext unlock failed:', e);
+    }
+  }
+
+  private async preloadSamples(): Promise<void> {
+    if (!this.ctx) return;
+
+    const files: Record<string, string> = {
+      ROCKET_WHISTLE: '/audio/rocket-whistle.mp3',
+      ROCKET_EXPLOSION: '/audio/rocket-explosion.mp3',
+      STARBURST: '/audio/starburst.mp3',
+      ROMAN_POP: '/audio/roman-pop.mp3',
+      ANAR: '/audio/anar-fountain.mp3',
+      SPARKLER: '/audio/sparkler.mp3',
+      CHAKRI: '/audio/chakri-spin.mp3',
+      FINALE: '/audio/finale-barrage.mp3'
+    };
+
+    for (const [key, url] of Object.entries(files)) {
+      try {
+        const res = await fetch(url);
+        const arrayBuf = await res.arrayBuffer();
+        const audioBuf = await this.ctx.decodeAudioData(arrayBuf);
+        this.buffers.set(key, audioBuf);
+      } catch (err) {
+        console.warn(`Failed to preload audio sample ${key} from ${url}:`, err);
+      }
     }
   }
 
@@ -60,238 +102,212 @@ export class PyroAudioEngine {
   public toggleMute(): boolean {
     this.isMuted = !this.isMuted;
     if (this.masterGain && this.ctx) {
-      this.masterGain.gain.setTargetAtTime(this.isMuted ? 0 : 0.85, this.ctx.currentTime, 0.05);
+      this.masterGain.gain.setTargetAtTime(this.isMuted ? 0 : 0.95, this.ctx.currentTime, 0.05);
     }
     return this.isMuted;
   }
 
   /**
-   * 1. Ascending Rocket Launch Whistle
+   * Plays a one-shot sample with randomized pitch (±4%)
    */
-  public playRocketLaunch(): void {
+  private playSample(key: string, volume: number = 1.0, pitchVariation: number = 0.06): void {
     if (!this.ctx || !this.masterGain || this.isMuted) return;
-    const now = this.ctx.currentTime;
 
-    // Pitch swept oscillator
-    const osc = this.ctx.createOscillator();
+    const buffer = this.buffers.get(key);
+    if (!buffer) {
+      // Fallback synthesis if sample is still loading
+      this.fallbackBeep(key, volume);
+      return;
+    }
+
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+
+    // Pitch randomization
+    const rate = 1.0 + (Math.random() - 0.5) * pitchVariation * 2;
+    source.playbackRate.value = rate;
+
     const gain = this.ctx.createGain();
+    gain.gain.value = volume;
 
-    osc.type = 'sine';
-    const startFreq = 320 + (Math.random() - 0.5) * 40;
-    const endFreq = 1600 + (Math.random() - 0.5) * 150;
-
-    osc.frequency.setValueAtTime(startFreq, now);
-    osc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.65);
-
-    // Envelope
-    gain.gain.setValueAtTime(0.01, now);
-    gain.gain.linearRampToValueAtTime(0.28, now + 0.1);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-
-    // Modulated whoosh noise
-    const noise = this.createNoiseNode(0.7);
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(startFreq * 1.5, now);
-    filter.frequency.exponentialRampToValueAtTime(endFreq * 1.5, now + 0.65);
-    filter.Q.value = 3.0;
-
-    const noiseGain = this.ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.12, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-
-    osc.connect(gain);
+    source.connect(gain);
     gain.connect(this.masterGain);
 
-    noise.connect(filter);
-    filter.connect(noiseGain);
-    noiseGain.connect(this.masterGain);
-
-    osc.start(now);
-    osc.stop(now + 0.75);
-    noise.start(now);
-    noise.stop(now + 0.75);
+    source.start();
   }
 
   /**
-   * 2. Deep Sub-Bass Explosion & Cracking Boom
+   * 1. Rocket Launch Whistle
+   */
+  public playRocketLaunch(): void {
+    this.playSample('ROCKET_WHISTLE', 0.95, 0.05);
+  }
+
+  /**
+   * 2. Rocket / Shell Explosion
    */
   public playExplosion(intensity: number = 1.0): void {
-    if (!this.ctx || !this.masterGain || this.isMuted) return;
-    const now = this.ctx.currentTime;
-
-    // A. Sub-Bass Thud (punch)
-    const osc = this.ctx.createOscillator();
-    const oscGain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(120 + Math.random() * 20, now);
-    osc.frequency.exponentialRampToValueAtTime(28, now + 0.8);
-
-    const oscVol = Math.min(1.0, 0.75 * intensity);
-    oscGain.gain.setValueAtTime(oscVol, now);
-    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
-
-    osc.connect(oscGain);
-    oscGain.connect(this.masterGain);
-    osc.start(now);
-    osc.stop(now + 0.9);
-
-    // B. Low-Pass Noise Boom & Air Blast
-    const noise = this.createNoiseNode(1.4);
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(650 * intensity, now);
-    filter.frequency.exponentialRampToValueAtTime(60, now + 1.2);
-
-    const noiseGain = this.ctx.createGain();
-    const noiseVol = Math.min(0.85, 0.65 * intensity);
-    noiseGain.gain.setValueAtTime(noiseVol, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 1.3);
-
-    noise.connect(filter);
-    filter.connect(noiseGain);
-    noiseGain.connect(this.masterGain);
-    noise.start(now);
-    noise.stop(now + 1.4);
+    const key = Math.random() < 0.5 ? 'ROCKET_EXPLOSION' : 'STARBURST';
+    this.playSample(key, Math.min(1.0, 0.85 * intensity), 0.08);
   }
 
   /**
    * 3. Roman Candle Pop
    */
   public playRomanPop(): void {
-    if (!this.ctx || !this.masterGain || this.isMuted) return;
-    const now = this.ctx.currentTime;
-
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(320, now);
-    osc.frequency.exponentialRampToValueAtTime(75, now + 0.08);
-
-    gain.gain.setValueAtTime(0.5, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-
-    osc.connect(gain);
-    gain.connect(this.masterGain);
-    osc.start(now);
-    osc.stop(now + 0.14);
+    this.playSample('ROMAN_POP', 0.85, 0.08);
   }
 
   /**
-   * Continuous Sound Generators (Anar, Sparkler, Chakri)
+   * 4. Grand Finale Multi-Burst
    */
-  private initContinuousLoops(): void {
-    if (!this.ctx || !this.masterGain) return;
-
-    // Continuous Anar Fountain Noise Loop
-    {
-      const noise = this.createContinuousNoiseNode();
-      const filter = this.ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.value = 2800;
-      filter.Q.value = 1.8;
-
-      this.anarGain = this.ctx.createGain();
-      this.anarGain.gain.value = 0;
-
-      noise.connect(filter);
-      filter.connect(this.anarGain);
-      this.anarGain.connect(this.masterGain);
-    }
-
-    // Continuous Sparkler Crackle Loop
-    {
-      const noise = this.createContinuousNoiseNode();
-      const filter = this.ctx.createBiquadFilter();
-      filter.type = 'highpass';
-      filter.frequency.value = 4500;
-
-      this.sparklerGain = this.ctx.createGain();
-      this.sparklerGain.gain.value = 0;
-
-      noise.connect(filter);
-      filter.connect(this.sparklerGain);
-      this.sparklerGain.connect(this.masterGain);
-    }
-
-    // Continuous Chakri Whir Loop
-    {
-      const osc = this.ctx.createOscillator();
-      osc.type = 'sawtooth';
-      osc.frequency.value = 160;
-
-      const filter = this.ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.value = 1100;
-      filter.Q.value = 4.0;
-
-      this.chakriGain = this.ctx.createGain();
-      this.chakriGain.gain.value = 0;
-
-      osc.connect(filter);
-      filter.connect(this.chakriGain);
-      this.chakriGain.connect(this.masterGain);
-      osc.start();
-    }
-
-    // Heartbeat monitor to fade out loops if not refreshed
-    window.setInterval(() => {
-      const now = performance.now();
-      if (this.ctx && this.anarGain && now - this.anarLastSeen > 120) {
-        this.anarGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.08);
-      }
-      if (this.ctx && this.sparklerGain && now - this.sparklerLastSeen > 120) {
-        this.sparklerGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.08);
-      }
-      if (this.ctx && this.chakriGain && now - this.chakriLastSeen > 120) {
-        this.chakriGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.08);
-      }
-    }, 80);
+  public playFinaleBarrage(): void {
+    this.playSample('FINALE', 1.0, 0.04);
   }
 
+  /**
+   * 5. Continuous Anar Fountain Roar
+   */
   public pulseAnarLoop(): void {
-    if (!this.ctx || !this.anarGain || this.isMuted) return;
-    this.anarLastSeen = performance.now();
-    this.anarGain.gain.setTargetAtTime(0.42, this.ctx.currentTime, 0.05);
+    this.lastAnarPulse = performance.now();
+    if (!this.ctx || !this.masterGain || this.isMuted) return;
+
+    if (!this.anarActive) {
+      this.startContinuousSample('ANAR', (src, gain) => {
+        this.anarLoopSource = src;
+        this.anarGain = gain;
+        this.anarActive = true;
+      });
+    } else if (this.anarGain) {
+      this.anarGain.gain.setTargetAtTime(0.85, this.ctx.currentTime, 0.05);
+    }
   }
 
+  /**
+   * 6. Continuous Sparkler Crackle
+   */
   public pulseSparklerLoop(): void {
-    if (!this.ctx || !this.sparklerGain || this.isMuted) return;
-    this.sparklerLastSeen = performance.now();
-    this.sparklerGain.gain.setTargetAtTime(0.35, this.ctx.currentTime, 0.05);
+    this.lastSparklerPulse = performance.now();
+    if (!this.ctx || !this.masterGain || this.isMuted) return;
+
+    if (!this.sparklerActive) {
+      this.startContinuousSample('SPARKLER', (src, gain) => {
+        this.sparklerLoopSource = src;
+        this.sparklerGain = gain;
+        this.sparklerActive = true;
+      });
+    } else if (this.sparklerGain) {
+      this.sparklerGain.gain.setTargetAtTime(0.75, this.ctx.currentTime, 0.05);
+    }
   }
 
+  /**
+   * 7. Continuous Chakri Whir
+   */
   public pulseChakriLoop(): void {
-    if (!this.ctx || !this.chakriGain || this.isMuted) return;
-    this.chakriLastSeen = performance.now();
-    this.chakriGain.gain.setTargetAtTime(0.38, this.ctx.currentTime, 0.05);
+    this.lastChakriPulse = performance.now();
+    if (!this.ctx || !this.masterGain || this.isMuted) return;
+
+    if (!this.chakriActive) {
+      this.startContinuousSample('CHAKRI', (src, gain) => {
+        this.chakriLoopSource = src;
+        this.chakriGain = gain;
+        this.chakriActive = true;
+      });
+    } else if (this.chakriGain) {
+      this.chakriGain.gain.setTargetAtTime(0.8, this.ctx.currentTime, 0.05);
+    }
   }
 
-  private createNoiseNode(duration: number): AudioBufferSourceNode {
-    if (!this.ctx) throw new Error('AudioContext missing');
-    const bufferSize = Math.floor(this.ctx.sampleRate * duration);
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
-    }
-    const node = this.ctx.createBufferSource();
-    node.buffer = buffer;
-    return node;
+  private startContinuousSample(
+    key: string,
+    callback: (src: AudioBufferSourceNode, gain: GainNode) => void
+  ): void {
+    if (!this.ctx || !this.masterGain) return;
+    const buffer = this.buffers.get(key);
+    if (!buffer) return;
+
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.01, this.ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.8, this.ctx.currentTime + 0.1);
+
+    source.connect(gain);
+    gain.connect(this.masterGain);
+    source.start();
+
+    callback(source, gain);
   }
 
-  private createContinuousNoiseNode(): AudioBufferSourceNode {
-    if (!this.ctx) throw new Error('AudioContext missing');
-    const bufferSize = this.ctx.sampleRate * 2;
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
+  private watchdog(): void {
+    if (!this.ctx) return;
+    const now = performance.now();
+
+    // Fade out Anar if not refreshed in 150ms
+    if (this.anarActive && now - this.lastAnarPulse > 150) {
+      if (this.anarGain) {
+        this.anarGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+      }
+      if (now - this.lastAnarPulse > 300) {
+        this.stopSource(this.anarLoopSource);
+        this.anarLoopSource = null;
+        this.anarGain = null;
+        this.anarActive = false;
+      }
     }
-    const node = this.ctx.createBufferSource();
-    node.buffer = buffer;
-    node.loop = true;
-    node.start();
-    return node;
+
+    // Fade out Sparkler if not refreshed in 150ms
+    if (this.sparklerActive && now - this.lastSparklerPulse > 150) {
+      if (this.sparklerGain) {
+        this.sparklerGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+      }
+      if (now - this.lastSparklerPulse > 300) {
+        this.stopSource(this.sparklerLoopSource);
+        this.sparklerLoopSource = null;
+        this.sparklerGain = null;
+        this.sparklerActive = false;
+      }
+    }
+
+    // Fade out Chakri if not refreshed in 150ms
+    if (this.chakriActive && now - this.lastChakriPulse > 150) {
+      if (this.chakriGain) {
+        this.chakriGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+      }
+      if (now - this.lastChakriPulse > 300) {
+        this.stopSource(this.chakriLoopSource);
+        this.chakriLoopSource = null;
+        this.chakriGain = null;
+        this.chakriActive = false;
+      }
+    }
+  }
+
+  private stopSource(src: AudioBufferSourceNode | null): void {
+    if (!src) return;
+    try {
+      src.stop();
+      src.disconnect();
+    } catch {
+      // Ignore if already stopped
+    }
+  }
+
+  private fallbackBeep(_key: string, _volume: number): void {
+    if (!this.ctx || !this.masterGain || this.isMuted) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(now);
+    osc.stop(now + 0.4);
   }
 }

@@ -87,6 +87,9 @@ class FireworksApp {
         case 'ROMAN_POP':
           this.audio.playRomanPop();
           break;
+        case 'FINALE':
+          this.audio.playFinaleBarrage();
+          break;
       }
     });
 
@@ -344,7 +347,7 @@ class FireworksApp {
       case 'STARBURST': return 'Starburst (✋)';
       case 'ROMAN_CANDLE': return 'Roman Candle (✌️)';
       case 'PHOOLJHADI': return 'Phooljhadi Sparkler (👌)';
-      case 'CHAKRI': return 'Chakri Spinner (🔄)';
+      case 'CHAKRI': return 'Chakri Spinner (👇 Point Down)';
       case 'GRAND_FINALE': return 'Grand Finale (🙌)';
       default: return 'None';
     }
