@@ -1,0 +1,11 @@
+import { ParticlePool } from '../particles/particle';
+
+export interface FireworkEffect {
+  active: boolean;
+  update(dt: number, pool: ParticlePool): void;
+}
+
+export type SoundTriggerCallback = (
+  soundType: 'ROCKET_LAUNCH' | 'EXPLOSION' | 'ANAR_LOOP' | 'SPARKLER_LOOP' | 'CHAKRI_LOOP' | 'ROMAN_POP',
+  intensity?: number
+) => void;
