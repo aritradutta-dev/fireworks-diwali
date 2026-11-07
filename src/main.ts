@@ -16,47 +16,60 @@ class FireworksApp {
   // DOM Elements
   private hudElement: HTMLElement;
   private restoreHudBtn: HTMLElement;
-  private creatorModeBtn: HTMLElement;
-  private debugBtn: HTMLElement;
   private audioBtn: HTMLElement;
-  private screenshotBtn: HTMLElement;
   private recordBtn: HTMLElement;
   private recordLabel: HTMLElement;
   private recordTimer: HTMLElement;
   private finaleCenter: HTMLElement;
   private finaleTimeout: number = 0;
 
-  // Recording Modal Elements
-  private recordingModal: HTMLElement;
-  private previewVideo: HTMLVideoElement;
-  private modalDownloadBtn: HTMLElement;
-  private modalRetakeBtn: HTMLElement;
-  private modalCloseBtn: HTMLElement;
+  // Fog-Mirror Style Reel Preview Elements
+  private reelPreviewCard: HTMLElement;
+  private reelPreviewVideo: HTMLVideoElement;
+  private reelPreviewThumbBtn: HTMLElement;
+  private reelDuration: HTMLElement;
+  private reelViewBtn: HTMLElement;
+  private reelSaveBtn: HTMLElement;
+  private reelDismissBtn: HTMLElement;
+
+  // Full Reel Dialog Elements
+  private reelDialog: HTMLDialogElement;
+  private reelDialogVideo: HTMLVideoElement;
+  private reelDialogSaveBtn: HTMLElement;
+  private reelDialogDismissBtn: HTMLElement;
+  private reelDialogCloseBtn: HTMLElement;
 
   private gestureCards: Map<string, HTMLElement> = new Map();
   private isCreatorMode: boolean = false;
   private lastFrameTime: number = performance.now();
+  private recordedVideoUrl: string = '';
 
   constructor() {
     const canvas = document.getElementById('stage') as HTMLCanvasElement;
     const video = document.getElementById('webcam') as HTMLVideoElement;
     this.hudElement = document.getElementById('hud') as HTMLElement;
     this.restoreHudBtn = document.getElementById('btn-restore-hud') as HTMLElement;
-    this.creatorModeBtn = document.getElementById('btn-creator-mode') as HTMLElement;
-    this.debugBtn = document.getElementById('btn-debug') as HTMLElement;
     this.audioBtn = document.getElementById('btn-audio') as HTMLElement;
-    this.screenshotBtn = document.getElementById('btn-screenshot') as HTMLElement;
     this.recordBtn = document.getElementById('btn-record') as HTMLElement;
     this.recordLabel = document.getElementById('record-label') as HTMLElement;
     this.recordTimer = document.getElementById('record-timer') as HTMLElement;
     this.finaleCenter = document.getElementById('grand-finale-center') as HTMLElement;
 
-    // Recording Modal Elements
-    this.recordingModal = document.getElementById('recording-modal') as HTMLElement;
-    this.previewVideo = document.getElementById('preview-video') as HTMLVideoElement;
-    this.modalDownloadBtn = document.getElementById('modal-download-btn') as HTMLElement;
-    this.modalRetakeBtn = document.getElementById('modal-retake-btn') as HTMLElement;
-    this.modalCloseBtn = document.getElementById('modal-close-btn') as HTMLElement;
+    // Fog-Mirror Floating Preview Card Elements
+    this.reelPreviewCard = document.getElementById('reel-preview-card') as HTMLElement;
+    this.reelPreviewVideo = document.getElementById('reel-preview-video') as HTMLVideoElement;
+    this.reelPreviewThumbBtn = document.getElementById('reel-preview-thumb-btn') as HTMLElement;
+    this.reelDuration = document.getElementById('reel-duration') as HTMLElement;
+    this.reelViewBtn = document.getElementById('reel-view-btn') as HTMLElement;
+    this.reelSaveBtn = document.getElementById('reel-save-btn') as HTMLElement;
+    this.reelDismissBtn = document.getElementById('reel-dismiss-btn') as HTMLElement;
+
+    // Fog-Mirror Dialog Elements
+    this.reelDialog = document.getElementById('reel-dialog') as HTMLDialogElement;
+    this.reelDialogVideo = document.getElementById('reel-dialog-video') as HTMLVideoElement;
+    this.reelDialogSaveBtn = document.getElementById('reel-dialog-save-btn') as HTMLElement;
+    this.reelDialogDismissBtn = document.getElementById('reel-dialog-dismiss-btn') as HTMLElement;
+    this.reelDialogCloseBtn = document.getElementById('reel-dialog-close-btn') as HTMLElement;
 
     // Cache gesture cards
     document.querySelectorAll<HTMLElement>('.gesture-card').forEach((card) => {
@@ -115,19 +128,12 @@ class FireworksApp {
         this.restoreHudBtn.classList.add('hidden');
       }
     };
-    this.creatorModeBtn.addEventListener('click', toggleCreatorMode);
     this.restoreHudBtn.addEventListener('click', toggleCreatorMode);
 
     // 2. Debug Tracker Skeleton (D key)
     const toggleDebug = () => {
       this.vision.showDebug = !this.vision.showDebug;
-      if (this.vision.showDebug) {
-        this.debugBtn.classList.add('btn-active');
-      } else {
-        this.debugBtn.classList.remove('btn-active');
-      }
     };
-    this.debugBtn.addEventListener('click', toggleDebug);
 
     // 3. Audio Toggle (M key)
     const toggleAudio = () => {
@@ -151,7 +157,6 @@ class FireworksApp {
     const takeSnap = () => {
       this.capture.takeScreenshot();
     };
-    this.screenshotBtn.addEventListener('click', takeSnap);
 
     // 5. Video Reel Recording (R key)
     const toggleRecording = () => {
@@ -166,20 +171,23 @@ class FireworksApp {
     this.recordBtn.addEventListener('click', toggleRecording);
 
     // Configure capture callbacks
+    let recordedSeconds = 0;
     this.capture.setCallbacks({
       onRecordingStart: () => {
         this.recordBtn.classList.add('recording');
         this.recordLabel.textContent = 'Stop';
+        this.dismissReelPreview();
       },
       onRecordingStop: (_blob, videoUrl) => {
         this.recordBtn.classList.remove('recording');
         this.recordLabel.textContent = 'Record';
         this.recordTimer.textContent = '00:00';
 
-        // Open Video Preview Modal (Fog Mirror Style)
-        this.showRecordingPreview(videoUrl);
+        // Present Fog-Mirror Style Floating Preview Card
+        this.showReelPreview(videoUrl, recordedSeconds);
       },
       onTimeUpdate: (elapsed, max) => {
+        recordedSeconds = elapsed;
         const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
         const s = Math.floor(elapsed % 60).toString().padStart(2, '0');
         const maxS = Math.floor(max % 60).toString().padStart(2, '0');
@@ -187,30 +195,51 @@ class FireworksApp {
       }
     });
 
-    // Recording Preview Modal Handlers
-    this.modalDownloadBtn.addEventListener('click', () => {
+    // Fog-Mirror Floating Preview Card Handlers
+    this.reelSaveBtn.addEventListener('click', () => {
       this.capture.downloadCurrentReel();
     });
 
-    const closeModal = () => {
-      this.recordingModal.classList.add('hidden');
-      this.previewVideo.pause();
-      this.previewVideo.src = '';
+    this.reelDismissBtn.addEventListener('click', () => {
+      this.dismissReelPreview();
+    });
+
+    const openFullDialog = () => {
+      if (!this.recordedVideoUrl) return;
+      this.reelDialogVideo.src = this.recordedVideoUrl;
+      this.reelDialog.showModal();
+      this.reelDialogVideo.currentTime = 0;
+      this.reelDialogVideo.play().catch(() => {});
     };
 
-    this.modalCloseBtn.addEventListener('click', closeModal);
-    this.modalRetakeBtn.addEventListener('click', closeModal);
+    this.reelViewBtn.addEventListener('click', openFullDialog);
+    this.reelPreviewThumbBtn.addEventListener('click', openFullDialog);
+
+    // Full Reel Dialog Handlers
+    const closeFullDialog = () => {
+      this.reelDialog.close();
+      this.reelDialogVideo.pause();
+    };
+
+    this.reelDialogCloseBtn.addEventListener('click', closeFullDialog);
+    this.reelDialogDismissBtn.addEventListener('click', closeFullDialog);
+    this.reelDialogSaveBtn.addEventListener('click', () => {
+      this.capture.downloadCurrentReel();
+    });
 
     // Global Keybindings
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeModal();
+      if (e.key === 'Escape') {
+        if (this.reelDialog.open) closeFullDialog();
+        else this.dismissReelPreview();
+      }
       if (e.key === 'h' || e.key === 'H') toggleCreatorMode();
       if (e.key === 'd' || e.key === 'D') toggleDebug();
       if (e.key === 'm' || e.key === 'M') toggleAudio();
       if (e.key === 's' || e.key === 'S') takeSnap();
       if (e.key === 'r' || e.key === 'R') toggleRecording();
 
-      // Manual Testing Keys (1 to 7)
+      // Manual Testing Keys (1 to 6)
       const w = this.compositor.width;
       const h = this.compositor.height;
       const center = { x: w / 2, y: h / 2 };
@@ -230,22 +259,24 @@ class FireworksApp {
       }
     });
 
-    // Mouse click launches rocket at click coordinate
-    window.addEventListener('pointerdown', (e) => {
-      if ((e.target as HTMLElement).closest('.hud-header, .hud-footer, .restore-hud-btn, .recording-modal')) return;
-      this.audio.unlock();
-      this.director.handleGestures(
-        [{ type: 'ROCKET', confidence: 1, triggerPoint: { x: e.clientX, y: e.clientY }, handIndex: 0, isContinuous: false }],
-        this.compositor.width,
-        this.compositor.height
-      );
-    });
+    // NOTE: Mouse click rocket trigger intentionally removed per user request.
+    // Fireworks are now triggered exclusively through webcam hand gestures or hotkeys.
   }
 
-  private showRecordingPreview(videoUrl: string): void {
-    this.previewVideo.src = videoUrl;
-    this.recordingModal.classList.remove('hidden');
-    this.previewVideo.play().catch(() => {});
+  private showReelPreview(videoUrl: string, seconds: number): void {
+    this.recordedVideoUrl = videoUrl;
+    this.reelPreviewVideo.src = videoUrl;
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+    this.reelDuration.textContent = `${m}:${s}`;
+    this.reelPreviewCard.classList.remove('hidden');
+    this.reelPreviewVideo.play().catch(() => {});
+  }
+
+  private dismissReelPreview(): void {
+    this.reelPreviewCard.classList.add('hidden');
+    this.reelPreviewVideo.pause();
+    this.reelPreviewVideo.src = '';
   }
 
   private triggerGrandFinale(w: number, h: number): void {
@@ -260,10 +291,10 @@ class FireworksApp {
     this.finaleTimeout = window.setTimeout(() => {
       this.finaleCenter.classList.remove('hidden');
 
-      // Keep it up for 4.5 seconds of golden celebration, then fade out smoothly
+      // Keep it up for 6.5 seconds of golden celebration, then fade out smoothly
       window.setTimeout(() => {
         this.finaleCenter.classList.add('hidden');
-      }, 4800);
+      }, 6500);
     }, 1400);
   }
 

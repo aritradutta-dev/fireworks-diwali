@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Rozha+One&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/src/style.css" />
@@ -26,42 +26,53 @@
       <!-- Grand Finale Centerpiece: Shows "HAPPY DIWALI" in center after Grand Finale -->
       <div id="grand-finale-center" class="grand-finale-center hidden">
         <div class="finale-sparkle-aura"></div>
-        <h1 class="finale-heading">✨ HAPPY DIWALI ✨</h1>
-        <p class="finale-subheading">May your year blaze with light, joy & prosperity</p>
+        <div class="finale-mandala-ring"></div>
+        
+        <!-- Marigold Garland Arch -->
+        <div class="marigold-garland">
+          <img src="/images/marigold.svg" class="garland-flower f1" alt="Marigold" />
+          <img src="/images/marigold.svg" class="garland-flower f2" alt="Marigold" />
+          <img src="/images/marigold.svg" class="garland-flower f3" alt="Marigold" />
+          <img src="/images/marigold.svg" class="garland-flower f4" alt="Marigold" />
+          <img src="/images/marigold.svg" class="garland-flower f5" alt="Marigold" />
+        </div>
+
+        <div class="finale-banner">
+          <img src="/images/marigold.svg" class="banner-flower left" alt="Marigold" />
+          <div class="finale-text-group">
+            <span class="finale-pretitle">✦ SHUBH DEEPAVALI ✦</span>
+            <h1 class="finale-heading">HAPPY DIWALI</h1>
+            <p class="finale-subheading">May your world blaze with light, joy & prosperity</p>
+          </div>
+          <img src="/images/marigold.svg" class="banner-flower right" alt="Marigold" />
+        </div>
+
+        <!-- Center Glowing Diya Lamp -->
+        <div class="finale-diya-wrap">
+          <img src="/images/diya.svg" class="finale-diya" alt="Diwali Diya" />
+        </div>
       </div>
 
       <!-- UI Container (toggled in Creator Mode via 'H') -->
       <div id="hud" class="hud-container">
-        <!-- Minimal, Colorful Top Navigation Bar -->
+        <!-- Minimal, Poppy Top Navigation Bar -->
         <header class="hud-header">
-          <!-- Minimal Festive Pill (replaces bulky logo) -->
+          <!-- Festive Diwali Pill -->
           <div class="festive-badge">
-            <span class="badge-dot"></span>
+            <img src="/images/marigold.svg" class="badge-marigold" alt="Marigold" />
             <span class="badge-text">Diwali 2026</span>
           </div>
 
-          <!-- Quick Controls Dock -->
+          <!-- Minimal Controls: Only Sound & Record -->
           <div class="header-actions">
             <button id="btn-audio" class="action-btn" title="Toggle Sound (M)">
               <span class="btn-icon">🔊</span>
               <span class="btn-label">Sound</span>
             </button>
-            <button id="btn-debug" class="action-btn" title="Toggle Hand Skeleton (D)">
-              <span class="btn-icon">👁️</span>
-              <span class="btn-label">Tracker</span>
-            </button>
-            <button id="btn-screenshot" class="action-btn btn-snap" title="Save Postcard Photo (S)">
-              <span class="btn-icon">📸</span>
-              <span class="btn-label">Snap</span>
-            </button>
-            <button id="btn-record" class="action-btn btn-record" title="Record Video Reel (R)">
+            <button id="btn-record" class="action-btn btn-record" title="Record Reel (R)">
               <span class="record-dot"></span>
               <span id="record-label" class="btn-label">Record</span>
               <span id="record-timer" class="record-timer">00:00</span>
-            </button>
-            <button id="btn-creator-mode" class="action-btn" title="Creator Mode — Hide HUD for Reels (H)">
-              <span class="btn-icon">🎬</span>
-              <span class="btn-label">Clean (H)</span>
             </button>
           </div>
         </header>
@@ -120,7 +131,7 @@
         </footer>
       </div>
 
-      <!-- Creator Mode Floating Pill (Shown when HUD hidden) -->
+      <!-- Creator Mode Floating Pill (Shown when HUD hidden via 'H') -->
       <button id="btn-restore-hud" class="restore-hud-btn hidden" title="Show Controls (Press H)">
         <span>👁️ Show HUD [H]</span>
       </button>
@@ -131,30 +142,42 @@
         <span class="watermark-sub">Fireworks Conductor</span>
       </div>
 
-      <!-- Video Recording Preview Modal (Fog-Mirror Style) -->
-      <div id="recording-modal" class="recording-modal hidden">
-        <div class="modal-backdrop"></div>
-        <div class="modal-card">
-          <div class="modal-header">
-            <div class="modal-title-group">
-              <span class="modal-spark">🎆</span>
-              <span class="modal-title">Your Diwali Reel</span>
+      <!-- Video Recording Floating Preview Card (Fog-Mirror Style) -->
+      <aside id="reel-preview-card" class="reel-preview hidden" aria-label="Recorded Diwali Reel">
+        <button type="button" id="reel-preview-thumb-btn" class="reel-thumb-btn" aria-label="Open full reel preview">
+          <video id="reel-preview-video" playsinline loop muted autoplay></video>
+          <div class="reel-play-overlay"><span>🔍</span></div>
+        </button>
+        <div class="reel-card-meta">
+          <span class="reel-badge">🎆 Diwali Reel</span>
+          <span id="reel-duration" class="reel-duration">00:00</span>
+        </div>
+        <div class="reel-actions">
+          <button type="button" id="reel-view-btn" class="hud-btn hud-btn-label" aria-label="View full reel">View</button>
+          <button type="button" id="reel-save-btn" class="hud-btn hud-btn-label btn-save" aria-label="Save reel">Save</button>
+          <button type="button" id="reel-dismiss-btn" class="hud-btn hud-btn-label btn-dismiss" aria-label="Dismiss">Dismiss</button>
+        </div>
+      </aside>
+
+      <!-- Full Video Dialog (Fog-Mirror Style) -->
+      <dialog id="reel-dialog" class="reel-dialog" aria-label="Diwali Reel Player">
+        <div class="reel-dialog-card">
+          <div class="reel-dialog-header">
+            <div class="reel-dialog-title">
+              <img src="/images/marigold.svg" class="dialog-marigold" alt="" />
+              <span>Diwali Fireworks Reel</span>
             </div>
-            <button id="modal-close-btn" class="modal-close-btn" title="Close Preview">&times;</button>
+            <button type="button" id="reel-dialog-close-btn" class="reel-dialog-close" aria-label="Close dialog">&times;</button>
           </div>
-          <div class="modal-video-wrapper">
-            <video id="preview-video" controls autoplay loop playsinline></video>
+          <div class="reel-dialog-video-wrapper">
+            <video id="reel-dialog-video" controls playsinline loop></video>
           </div>
-          <div class="modal-footer">
-            <button id="modal-download-btn" class="modal-btn btn-download">
-              <span>⬇️ Download Reel (.webm)</span>
-            </button>
-            <button id="modal-retake-btn" class="modal-btn btn-retake">
-              <span>✕ Retake</span>
-            </button>
+          <div class="reel-dialog-footer">
+            <button type="button" id="reel-dialog-save-btn" class="hud-btn hud-btn-download">⬇️ Download Reel (.webm)</button>
+            <button type="button" id="reel-dialog-dismiss-btn" class="hud-btn hud-btn-close">Close</button>
           </div>
         </div>
-      </div>
+      </dialog>
     </div>
 
     <script type="module" src="/src/main.ts"></script>
