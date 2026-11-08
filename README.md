@@ -3,7 +3,7 @@
 > **Turn your hands into authentic Diwali fireworks.**
 > Wave, point, spin, spread — every gesture ignites a distinct firework directly over your webcam feed in real-time. Record reels, download festive postcards, and conduct the night sky.
 
-👉 **Live Demo:**  (https://fireworks-diwali.vercel.app/)
+👉 **Live Demo:**  (https://fireworks-diwali.vercel.app/)   
 📦 **Repository:** (https://github.com/aritradutta-dev/fireworks-diwali)
 
 ---
