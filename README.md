@@ -3,8 +3,8 @@
 > **Turn your hands into authentic Diwali fireworks.**
 > Wave, point, spin, spread — every gesture ignites a distinct firework directly over your webcam feed in real-time. Record reels, download festive postcards, and conduct the night sky.
 
-👉 **Live Demo:** [https://gesture-fireworks.netlify.app](https://gesture-fireworks.netlify.app)  
-📦 **Repository:** [https://github.com/aritradutta-dev/fireworks-diwali](https://github.com/aritradutta-dev/fireworks-diwali)
+👉 **Live Demo:**  (https://fireworks-diwali.vercel.app/)
+📦 **Repository:** (https://github.com/aritradutta-dev/fireworks-diwali)
 
 ---
 
@@ -22,7 +22,7 @@ pnpm install
 pnpm dev
 ```
 
-Open `http://localhost:5501` in Google Chrome or Arc. Grant camera permission when prompted.
+Open `http://localhost:5501` in Safari or Chrome. Grant camera permission when prompted.
 
 ---
 
